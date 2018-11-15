@@ -12,18 +12,6 @@ import org.apache.kafka.connect.sink.SinkConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
-import com.github.jcustenborder.kafka.connect.utils.config.Description;
-import com.github.jcustenborder.kafka.connect.utils.config.DocumentationImportant;
-import com.github.jcustenborder.kafka.connect.utils.config.DocumentationNote;
-import com.github.jcustenborder.kafka.connect.utils.config.DocumentationTip;
-import com.github.jcustenborder.kafka.connect.utils.config.Title;
-
-@Description("Rockset Sink Connector for Kafka Connect")
-@DocumentationImportant("")
-@DocumentationTip("")
-@DocumentationNote("")
-@Title("Rockset Sink Connector for Kafka Connect")
 public class RocksetSinkConnector extends SinkConnector {
   private static Logger log = LoggerFactory.getLogger(RocksetSinkConnector.class);
   private Map<String, String> configProperties;
@@ -66,6 +54,6 @@ public class RocksetSinkConnector extends SinkConnector {
 
   @Override
   public String version() {
-    return VersionUtil.version(this.getClass());
+    return "0.1";
   }
 }

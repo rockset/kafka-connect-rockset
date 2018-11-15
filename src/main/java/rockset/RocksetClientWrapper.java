@@ -6,6 +6,7 @@ import com.rockset.client.model.AddDocumentsRequest;
 import com.rockset.client.model.AddDocumentsResponse;
 import java.util.LinkedList;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,6 @@ public class RocksetClientWrapper {
       log.error("{}: {}", e.getMessage(), res != null ? res.toString() : "no response");
       return;
     }
-    log.debug("Added doc: {}", json);
+    log.info("Added doc: {}", StringUtils.abbreviate(json, 10));
   }
 }
