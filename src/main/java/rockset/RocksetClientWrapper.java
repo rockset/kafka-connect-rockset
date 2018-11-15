@@ -20,19 +20,19 @@ public class RocksetClientWrapper {
     }
   }
 
-  public void addDoc(String collection, String json, Boolean val) {
+  public void addDoc(String collection, String json) {
     LinkedList<Object> list = new LinkedList<>();
-    Map map = new Gson().fromJson(json, Map.class);
-    list.add(map);
-    AddDocumentsRequest documentsRequest =
-        new AddDocumentsRequest().data(list);
-
     AddDocumentsResponse res = null;
+
     try {
+      Map map = new Gson().fromJson(json, Map.class);
+      list.add(map);
+      AddDocumentsRequest documentsRequest = new AddDocumentsRequest().data(list);
       res = client.addDocuments(collection, documentsRequest);
     } catch (Exception e) {
-      log.error("%s - %s", e.getMessage(), res != null ? res.toString() : "");
+      log.error("{}: {}", e.getMessage(), res != null ? res.toString() : "no response");
+      return;
     }
+    log.debug("Added doc: {}", json);
   }
-
 }

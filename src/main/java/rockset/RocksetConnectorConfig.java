@@ -13,6 +13,7 @@ public class RocksetConnectorConfig extends AbstractConfig {
   public static final String ROCKSET_APISERVER_URL = "rockset.apiserver.url";
   public static final String ROCKSET_APIKEY = "rockset.apikey";
   public static final String ROCKSET_COLLECTION = "rockset.collection";
+  public static final String ROCKSET_TASK_THREADS = "rockset.task.threads";
 
   public RocksetConnectorConfig(ConfigDef config, Map<String, String> originals) {
     super(config, originals, true);
@@ -40,6 +41,14 @@ public class RocksetConnectorConfig extends AbstractConfig {
         )
 
         .define(
+            ConfigKeyBuilder.of(ROCKSET_TASK_THREADS, Type.INT)
+                .documentation("Number of threads that each task will use to write to Rockset")
+                .importance(Importance.MEDIUM)
+                .defaultValue(5)
+                .build()
+        )
+
+        .define(
             ConfigKeyBuilder.of(ROCKSET_COLLECTION, Type.STRING)
                 .documentation("Rockset collection that incoming documents will be written to.")
                 .importance(Importance.HIGH)
@@ -58,4 +67,6 @@ public class RocksetConnectorConfig extends AbstractConfig {
   public String getRocksetCollection() {
     return this.getString(ROCKSET_COLLECTION);
   }
+
+  public int getRocksetTaskThreads() { return this.getInt(ROCKSET_TASK_THREADS); }
 }

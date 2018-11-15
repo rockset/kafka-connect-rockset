@@ -1,5 +1,7 @@
 package rockset;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -14,6 +16,7 @@ import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 
 public class RocksetSinkTask extends SinkTask {
   private RocksetClientWrapper rc;
+  private ExecutorService executorService;
   private static Logger log = LoggerFactory.getLogger(RocksetSinkTask.class);
 
   RocksetConnectorConfig config;
@@ -23,14 +26,14 @@ public class RocksetSinkTask extends SinkTask {
     this.rc = new RocksetClientWrapper(
         this.config.getRocksetApikey(),
         this.config.getRocksetApiServerUrl());
+    this.executorService = Executors.newFixedThreadPool(this.config.getRocksetTaskThreads());
   }
 
   @Override
   public void put(Collection<SinkRecord> records) {
+    String collection = this.config.getRocksetCollection();
     for (SinkRecord sr : records) {
-      log.warn(sr.value().toString());
-      String collection = this.config.getRocksetCollection();
-      this.rc.addDoc(collection, sr.value().toString(), true);
+      executorService.submit(() -> this.rc.addDoc(collection, sr.value().toString()));
     }
   }
 
