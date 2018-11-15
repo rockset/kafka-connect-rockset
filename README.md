@@ -24,7 +24,7 @@ Kafka Connect for [Rockset](https://rockset.com/) is a [Kafka Connect Sink](http
 
 1.  [Start](https://kafka.apache.org/quickstart) your Kafka cluster and confirm it is running.
 
-2. Kafka Connect can be run in standalone or distributed mode. In both modes, there is one configuration file that controls Kafka connect and a separate set of configuration for Rockset specific parameters. Depending on whether you are trying to run locally (standalone) or distributed, you will want to edit the appropriate configuration file -  `$KAFKA_HOME/config/connect-standalone.properties` or `$KAFKA_HOME/config/connect-distributed.properties` respectively.
+2. Kafka Connect can be run in [standalone or distributed](https://docs.confluent.io/current/connect/userguide.html#standalone-vs-distributed) modes. In both modes, there is one configuration file that controls Kafka connect and a separate set of configuration for Rockset specific parameters. Depending on whether you are trying to run locally (standalone) or distributed, you will want to edit the appropriate configuration file -  `$KAFKA_HOME/config/connect-standalone.properties` or `$KAFKA_HOME/config/connect-distributed.properties` respectively.
 2. In the config file mentioned above, adjust the values as shown below. For more information on installing Kafka Connect plugins please refer to the [Confluent Documentation.](https://docs.confluent.io/current/connect/userguide.html#id3)
 
 | Name | Value |
@@ -41,10 +41,9 @@ Kafka Connect for [Rockset](https://rockset.com/) is a [Kafka Connect Sink](http
 | key.converter.schemas.enable | false |
 | value.converter.schemas.enable | false |
 
-3. Place the jar file created by `mvn package` (``kafka-connect-rockset-[VERSION]-SNAPSHOT-jar-with-dependencies.jar``) in or under the location specified in `plugin.path`
-4. You can choose to run Kafka Connect in [standalone or distributed](https://docs.confluent.io/current/connect/userguide.html#standalone-vs-distributed) mode. To run it in standalone mode, modify the configuration file in the config/ directory and set the required parameters (see below). When running in distributed mode, you will use the REST API to set the same parameters and not the configuration file.
-5. Run `$KAFKA_HOME/bin/connect-standalone.sh $KAFKA_HOME/config/connect-standalone.properties ./config/connect-rockset-sink.properties` to start Kafka Connect with Rockset configured. This is sufficient for testing and should let you run a local Kafka Connect worker that uses the configuration provided in `./config/connect-rockset-sink.properties` to write JSON documents from Kafka to Rockset.
-6. Alternately, if you're running in distributed mode, you'll run: `$KAFKA_HOME/bin/connect-distributed.sh $KAFKA_HOME/config/connect-distributed.properties` to start Kafka Connect. You can then configure Kafka Connect using the REST API.
+4. Place the jar file created by `mvn package` (``kafka-connect-rockset-[VERSION]-SNAPSHOT-jar-with-dependencies.jar``) in or under the location specified in `plugin.path`
+5. If you are running in standalone mode modify the configuration file in the config/ directory in this repository and set the required parameters (see below). Run `$KAFKA_HOME/bin/connect-standalone.sh $KAFKA_HOME/config/connect-standalone.properties ./config/connect-rockset-sink.properties` to start Kafka Connect with Rockset configured. This is sufficient for testing and should let you run a local Kafka Connect worker that uses the configuration provided in `./config/connect-rockset-sink.properties` in this repository to write JSON documents from Kafka to Rockset.
+6. Alternately, if you're running in distributed mode, you'll run: `$KAFKA_HOME/bin/connect-distributed.sh $KAFKA_HOME/config/connect-distributed.properties` to start Kafka Connect. You can then configure parameters associated with Rockset using Kafka Connect's REST API.
   
 ```
 curl -i http://localhost:8083/connectors -H "Content-Type: application/json" -X POST -d '{
@@ -61,7 +60,7 @@ curl -i http://localhost:8083/connectors -H "Content-Type: application/json" -X 
 }'
 ```
 
-7. Use the following commands to check status, and manage connectors and tasks:
+7. In distributed mode, use the following commands to check status, and manage connectors and tasks:
 ```
 
 # List active connectors
@@ -99,7 +98,7 @@ See the [the Confluent doucumentation](https://docs.confluent.io/current/connect
 | `rockset.collection` | The name of the Rockset collection into which this connector will write. |  |
 | `rockset.apikey` | API Key authenticates the connector to write into Rockset collections | |
 
-#### General Optional Parameters
+#### Optional Parameters
 
 | Name | Description | Default Value |
 |-------- |----------------------------|-----------------------|
