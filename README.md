@@ -74,31 +74,20 @@ See the [the Confluent doucumentation](https://docs.confluent.io/current/connect
 #### Required Parameters
 
 | Name | Description | Default Value |
-
 |-------- |----------------------------|-----------------------|
-
 |`name` | Connector name. A consumer group with this name will be created with tasks to be distributed evenly across the connector cluster nodes.|
-
 | `connector.class` | The Java class used for executing the connector logic. |`rockset.RocksetSinkConnector`|
-
 | `tasks.max` | The number of tasks generated to handle data collection jobs in parallel. The tasks will be spread evenly across all Rockset Kafka Connector nodes.||
-
 | `topics` | List of comma-separated Kafka topics that should be watched by this Rockset Kafka Connector.||
-
 | `rockset.apiserver.url` | URL of the Rockset API Server to connect to. | https://api.rs2.usw2.rockset.com |
-
 | `rockset.collection` | The name of the Rockset collection into which this connector will write. |  |
-
 | `rockset.apikey` | API Key authenticates the connector to write into Rockset collections | |
 
 #### General Optional Parameters
 
 | Name | Description | Default Value |
-
 |-------- |----------------------------|-----------------------|
-
 | `rockset.task.threads` | Number of threads that each task should spawn when writing to Rockset. | 5 |
-  
 
 ## License
 
