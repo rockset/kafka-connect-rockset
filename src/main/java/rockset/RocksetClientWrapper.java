@@ -1,6 +1,7 @@
 package rockset;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rockset.client.RocksetClient;
 import com.rockset.client.model.AddDocumentsRequest;
 import com.rockset.client.model.AddDocumentsResponse;
@@ -9,7 +10,6 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class RocksetClientWrapper {
   private static Logger log = LoggerFactory.getLogger(RocksetClientWrapper.class);
@@ -24,10 +24,10 @@ public class RocksetClientWrapper {
   public void addDoc(String collection, String json) {
     LinkedList<Object> list = new LinkedList<>();
     AddDocumentsResponse res = null;
+    ObjectMapper mapper = new ObjectMapper();
 
     try {
-      Map map = new Gson().fromJson(json, Map.class);
-      list.add(map);
+      list.add(mapper.readValue(json, new TypeReference<Map<String, Object>>(){}));
       AddDocumentsRequest documentsRequest = new AddDocumentsRequest().data(list);
       res = client.addDocuments(collection, documentsRequest);
     } catch (Exception e) {
