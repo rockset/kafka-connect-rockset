@@ -24,26 +24,29 @@ Kafka Connect for [Rockset](https://rockset.com/) is a [Kafka Connect Sink](http
 
 1.  [Start](https://kafka.apache.org/quickstart) your Kafka cluster and confirm it is running.
 
-2. Kafka Connect can be run in [standalone or distributed](https://docs.confluent.io/current/connect/userguide.html#standalone-vs-distributed) modes. In both modes, there is one configuration file that controls Kafka connect and a separate set of configuration for Rockset specific parameters. Depending on whether you are trying to run locally (standalone) or distributed, you will want to edit the appropriate configuration file -  `$KAFKA_HOME/config/connect-standalone.properties` or `$KAFKA_HOME/config/connect-distributed.properties` respectively.
-2. In the config file mentioned above, adjust the values as shown below. For more information on installing Kafka Connect plugins please refer to the [Confluent Documentation.](https://docs.confluent.io/current/connect/userguide.html#id3)
+2. Kafka Connect can be run in [standalone or distributed](https://docs.confluent.io/current/connect/userguide.html#standalone-vs-distributed) modes. In both modes, there is one configuration file that controls Kafka connect and a separate set of configuration for Rockset specific parameters. Depending on whether you are trying to run locally (standalone) or distributed, you will want to edit the appropriate configuration file - `$KAFKA_HOME/config/connect-standalone.properties` or `$KAFKA_HOME/config/connect-distributed.properties` respectively.
+3. In the config file mentioned above, adjust the values as shown below. For more information on installing Kafka Connect plugins please refer to the [Confluent Documentation.](https://docs.confluent.io/current/connect/userguide.html#id3)
 
 | Name | Value |
 |-------- | ---------------------------- |
 | bootstrap.servers | `<list-of-kafka-brokers>` |
 | plugin.path | `/path/to/rockset/sink/connector.jar` |
 
-3. In addition to this, if you are dealing with JSON files in your stream already, you can turn off schema enforcement and conversion that Kafka connect provides by setting the following properties in the config file.
+4. In addition to this, if you are dealing with JSON files in your stream already, you can turn off schema enforcement and conversion that Kafka connect provides by setting the following properties in the config file.
 
 | Name | Value |
 |-------- | ---------------------------- |
 | key.converter | org.apache.kafka.connect.storage.StringConverter  |
 | value.converter | org.apache.kafka.connect.storage.StringConverter |
 | key.converter.schemas.enable | false |
-| value.converter.schemas.enable | false |
+| value.converter.schemas.enable | false 
 
-4. Place the jar file created by `mvn package` (``kafka-connect-rockset-[VERSION]-SNAPSHOT-jar-with-dependencies.jar``) in or under the location specified in `plugin.path`
-5. If you are running in standalone mode modify the configuration file in the config/ directory in this repository and set the required parameters (see below). Run `$KAFKA_HOME/bin/connect-standalone.sh $KAFKA_HOME/config/connect-standalone.properties ./config/connect-rockset-sink.properties` to start Kafka Connect with Rockset configured. This is sufficient for testing and should let you run a local Kafka Connect worker that uses the configuration provided in `./config/connect-rockset-sink.properties` in this repository to write JSON documents from Kafka to Rockset.
-6. Alternately, if you're running in distributed mode, you'll run: `$KAFKA_HOME/bin/connect-distributed.sh $KAFKA_HOME/config/connect-distributed.properties` to start Kafka Connect. You can then configure parameters associated with Rockset using Kafka Connect's REST API.
+There are sample configuration files that you can use directly in the config/ directory in this project.
+You can verify that your settings match the ones provided in there.
+
+5. Place the jar file created by `mvn package` (``kafka-connect-rockset-[VERSION]-SNAPSHOT-jar-with-dependencies.jar``) in or under the location specified in `plugin.path`
+6. If you are running in standalone mode modify the configuration file in the config/ directory in this repository and set the required parameters (see below). Run `$KAFKA_HOME/bin/connect-standalone.sh ./config/connect-standalone.properties ./config/connect-rockset-sink.properties` to start Kafka Connect with Rockset configured. This is sufficient for testing and should let you run a local Kafka Connect worker that uses the configuration provided in `./config/connect-rockset-sink.properties` in this repository to write JSON documents from Kafka to Rockset.
+7. Alternately, if you're running in distributed mode, you'll run: `$KAFKA_HOME/bin/connect-distributed.sh ./config/connect-distributed.properties` to start Kafka Connect. You can then configure parameters associated with Rockset using Kafka Connect's REST API.
   
 ```
 curl -i http://localhost:8083/connectors -H "Content-Type: application/json" -X POST -d '{
@@ -60,7 +63,7 @@ curl -i http://localhost:8083/connectors -H "Content-Type: application/json" -X 
 }'
 ```
 
-7. In distributed mode, use the following commands to check status, and manage connectors and tasks:
+8. In distributed mode, use the following commands to check status, and manage connectors and tasks:
 ```
 
 # List active connectors
