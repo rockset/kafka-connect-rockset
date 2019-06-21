@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RocksetSinkConnector extends SinkConnector {
-  private static Logger log = LoggerFactory.getLogger(RocksetSinkConnector.class);
+  public static final String VERSION = "1.0";
   private Map<String, String> configProperties;
 
   @Override
@@ -39,7 +39,7 @@ public class RocksetSinkConnector extends SinkConnector {
 
   @Override
   public void stop() {
-    // do nothing.
+    // not required.
   }
 
   @Override
@@ -54,6 +54,6 @@ public class RocksetSinkConnector extends SinkConnector {
 
   @Override
   public String version() {
-    return "0.1";
+    return VERSION;
   }
 }
