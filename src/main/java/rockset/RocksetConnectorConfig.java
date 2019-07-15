@@ -10,6 +10,7 @@ import java.util.Map;
 
 
 public class RocksetConnectorConfig extends AbstractConfig {
+  public static final String FORMAT = "format";
   public static final String ROCKSET_APISERVER_URL = "rockset.apiserver.url";
   public static final String ROCKSET_APIKEY = "rockset.apikey";
   public static final String ROCKSET_COLLECTION = "rockset.collection";
@@ -53,6 +54,14 @@ public class RocksetConnectorConfig extends AbstractConfig {
                 .documentation("Rockset collection that incoming documents will be written to.")
                 .importance(Importance.HIGH)
                 .build()
+        )
+
+        .define(
+            ConfigKeyBuilder.of(FORMAT, Type.STRING)
+                .documentation("Format of the data stream.")
+                .importance(Importance.HIGH)
+                .defaultValue("json")
+                .build()
         );
   }
 
@@ -69,4 +78,8 @@ public class RocksetConnectorConfig extends AbstractConfig {
   }
 
   public int getRocksetTaskThreads() { return this.getInt(ROCKSET_TASK_THREADS); }
+
+  public String getFormat() {
+    return this.getString(FORMAT);
+  }
 }

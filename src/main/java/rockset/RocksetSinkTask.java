@@ -1,5 +1,7 @@
 package rockset;
 
+import io.confluent.connect.avro.AvroData;
+import io.confluent.kafka.serializers.NonRecordContainer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -29,8 +31,31 @@ public class RocksetSinkTask extends SinkTask {
   @Override
   public void put(Collection<SinkRecord> records) {
     String collection = this.config.getRocksetCollection();
-    for (SinkRecord sr : records) {
-      executorService.submit(() -> this.rc.addDoc(collection, sr.value().toString()));
+    String format = this.config.getFormat();
+    handleRecords(records, format, collection);
+  }
+
+  private void handleRecords(Collection<SinkRecord> records, String format, String collection) {
+    switch (format) {
+      case "json":
+        for (SinkRecord sr : records) {
+          executorService.submit(() -> this.rc.addDoc(collection, sr.value().toString()));
+        }
+        break;
+      case "avro":
+        AvroData avroData = new AvroData(1000); // arg is cacheSize
+        for (SinkRecord sr : records) {
+          executorService.submit(() -> {
+            Object val = avroData.fromConnectData(sr.valueSchema(), sr.value());
+            if (val instanceof NonRecordContainer) {
+              val = ((NonRecordContainer) val).getValue();
+            }
+            this.rc.addDoc(collection, val.toString());
+          });
+        }
+        break;
+      default:
+        throw new RuntimeException(String.format("Format %s not supported", format));
     }
   }
 
