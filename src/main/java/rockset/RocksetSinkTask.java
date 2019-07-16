@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 
@@ -17,8 +18,11 @@ import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 public class RocksetSinkTask extends SinkTask {
   private RocksetClientWrapper rc;
   private ExecutorService executorService;
-
   RocksetConnectorConfig config;
+
+  public static final int RETRIES_COUNT = 5;
+  public static final int INITIAL_DELAY = 250;
+
   @Override
   public void start(Map<String, String> settings) {
     this.config = new RocksetConnectorConfig(settings);
@@ -26,6 +30,13 @@ public class RocksetSinkTask extends SinkTask {
         this.config.getRocksetApikey(),
         this.config.getRocksetApiServerUrl());
     this.executorService = Executors.newFixedThreadPool(this.config.getRocksetTaskThreads());
+  }
+
+  // used for testing
+  public void start(Map<String, String> settings, RocksetClientWrapper rc, ExecutorService executorService) {
+    this.config = new RocksetConnectorConfig(settings);
+    this.rc = rc;
+    this.executorService = executorService;
   }
 
   @Override
@@ -41,7 +52,7 @@ public class RocksetSinkTask extends SinkTask {
     switch (format) {
       case "json":
         for (SinkRecord sr : records) {
-          executorService.execute(() -> this.rc.addDoc(workspace, collection,
+          executorService.execute(() -> addWithRetries(workspace, collection,
               sr.value().toString(), sr));
         }
         break;
@@ -53,12 +64,33 @@ public class RocksetSinkTask extends SinkTask {
             if (val instanceof NonRecordContainer) {
               val = ((NonRecordContainer) val).getValue();
             }
-            this.rc.addDoc(workspace, collection, val.toString(), sr);
+            addWithRetries(workspace, collection, val.toString(), sr);
           });
         }
         break;
       default:
-        throw new RuntimeException(String.format("Format %s not supported", format));
+        throw new ConnectException(String.format("Format %s not supported", format));
+    }
+  }
+
+  private void addWithRetries(String workspace, String collection, String doc, SinkRecord sr) {
+    boolean success = this.rc.addDoc(workspace, collection, doc, sr);
+    int retries = 0;
+    int delay = INITIAL_DELAY;
+    while (!success && retries < RETRIES_COUNT) {
+      try {
+        Thread.sleep(delay);
+      } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
+      }
+      success = this.rc.addDoc(workspace, collection, doc, sr);
+      retries += 1;
+      delay *= 2;
+    }
+    if (!success) {
+      throw new ConnectException(String.format("Add document request timed out " +
+          "for document with _id %s, collection %s, and workspace %s",
+          RocksetSinkUtils.createId(sr), collection, workspace));
     }
   }
 
