@@ -25,6 +25,11 @@ public class RocksetClientWrapper {
     }
   }
 
+  // used for testing
+  public RocksetClientWrapper(RocksetClient client) {
+    this.client = client;
+  }
+
   // returns false on a Rockset internalerror exception to retry adding the doc,
   // returns true otherwise
   public boolean addDoc(String workspace, String collection, String json, SinkRecord sr) {

@@ -35,35 +35,49 @@ public class RocksetSinkTaskTest {
 
   @Test
   public void testPutJson() {
-    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, "{'name':'johnny'}", 0);
+    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, "{\"name\":\"johnny\"}", 0);
     Collection records = new ArrayList();
     records.add(sr);
+
+    Map settings = new HashMap();
+    settings.put("rockset.apikey", "5");
+    settings.put("rockset.collection", "j");
+    settings.put("format", "json");
+
+    RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
+    Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(true);
+    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
     RocksetSinkTask rst = new RocksetSinkTask();
-    Map config = new HashMap();
-    config.put("rockset.apikey", "5");
-    config.put("rockset.collection", "j");
-    config.put("format", "json");
-    rst.start(config);
+    rst.start(settings, rc, executorService);
+
     rst.put(records);
+    Mockito.verify(rc).addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.eq("{\"name\":\"johnny\"}"), Mockito.any());
   }
 
   @Test
   public void testPutAvro() {
-    SchemaBuilder builder = SchemaBuilder.struct()
-        .field("name", Schema.STRING_SCHEMA);
-    Schema schema = builder.build();
+    Schema schema = SchemaBuilder.struct()
+        .field("name", Schema.STRING_SCHEMA)
+        .build();
     Struct record = new Struct(schema)
         .put("name", "johnny");
     SinkRecord sr = new SinkRecord("testPut", 1, null, "key", schema, record, 0);
     Collection records = new ArrayList();
     records.add(sr);
+
+    Map settings = new HashMap();
+    settings.put("rockset.apikey", "5");
+    settings.put("rockset.collection", "j");
+    settings.put("format", "avro");
+
+    RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
+    Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(true);
+    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
     RocksetSinkTask rst = new RocksetSinkTask();
-    Map config = new HashMap();
-    config.put("rockset.apikey", "5");
-    config.put("rockset.collection", "j");
-    config.put("format", "avro");
-    rst.start(config);
+    rst.start(settings, rc, executorService);
+
     rst.put(records);
+    Mockito.verify(rc).addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.eq("{\"name\": \"johnny\"}"), Mockito.any());
   }
 
   @Test
@@ -72,15 +86,15 @@ public class RocksetSinkTaskTest {
     Collection records = new ArrayList();
     records.add(sr);
 
-    Map config = new HashMap();
-    config.put("rockset.apikey", "5");
-    config.put("rockset.collection", "j");
+    Map settings = new HashMap();
+    settings.put("rockset.apikey", "5");
+    settings.put("rockset.collection", "j");
 
     RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
     Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(false);
     ExecutorService executorService = MoreExecutors.newDirectExecutorService();
     RocksetSinkTask rst = new RocksetSinkTask();
-    rst.start(config, rc, executorService);
+    rst.start(settings, rc, executorService);
 
     assertThrows(ConnectException.class, () -> {
       rst.put(records);
