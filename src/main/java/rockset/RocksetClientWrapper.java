@@ -22,7 +22,7 @@ public class RocksetClientWrapper {
     }
   }
 
-  public void addDoc(String collection, String json) {
+  public void addDoc(String workspace, String collection, String json) {
     LinkedList<Object> list = new LinkedList<>();
     ObjectMapper mapper = new ObjectMapper();
 
@@ -34,9 +34,11 @@ public class RocksetClientWrapper {
 
     try {
       AddDocumentsRequest documentsRequest = new AddDocumentsRequest().data(list);
-      client.addDocuments(collection, documentsRequest);
+      client.addDocuments(workspace, collection, documentsRequest);
     } catch (Exception e) {
-      throw new ConnectException("Unable to write document to Rockset");
+      throw new ConnectException(String.format("Unable to write document " +
+          "to collection %s, workspace %s in Rockset, cause: %s",
+          collection, workspace, e.getMessage()));
     }
   }
 }

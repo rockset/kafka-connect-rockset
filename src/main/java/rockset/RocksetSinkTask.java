@@ -31,26 +31,29 @@ public class RocksetSinkTask extends SinkTask {
   @Override
   public void put(Collection<SinkRecord> records) {
     String collection = this.config.getRocksetCollection();
+    String workspace = this.config.getRocksetWorkspace();
     String format = this.config.getFormat();
-    handleRecords(records, format, collection);
+    handleRecords(records, format, workspace, collection);
   }
 
-  private void handleRecords(Collection<SinkRecord> records, String format, String collection) {
+  private void handleRecords(Collection<SinkRecord> records, String format,
+                             String workspace, String collection) {
     switch (format) {
       case "json":
         for (SinkRecord sr : records) {
-          executorService.submit(() -> this.rc.addDoc(collection, sr.value().toString()));
+          executorService.execute(() -> this.rc.addDoc(workspace, collection,
+                                                       sr.value().toString()));
         }
         break;
       case "avro":
         AvroData avroData = new AvroData(1000); // arg is cacheSize
         for (SinkRecord sr : records) {
-          executorService.submit(() -> {
+          executorService.execute(() -> {
             Object val = avroData.fromConnectData(sr.valueSchema(), sr.value());
             if (val instanceof NonRecordContainer) {
               val = ((NonRecordContainer) val).getValue();
             }
-            this.rc.addDoc(collection, val.toString());
+            this.rc.addDoc(workspace, collection, val.toString());
           });
         }
         break;

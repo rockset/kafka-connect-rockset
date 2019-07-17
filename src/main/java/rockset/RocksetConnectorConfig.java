@@ -4,6 +4,7 @@ import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigDef.Importance;
+import org.apache.kafka.connect.errors.ConnectException;
 import com.github.jcustenborder.kafka.connect.utils.config.ConfigKeyBuilder;
 
 import java.util.Map;
@@ -14,10 +15,12 @@ public class RocksetConnectorConfig extends AbstractConfig {
   public static final String ROCKSET_APISERVER_URL = "rockset.apiserver.url";
   public static final String ROCKSET_APIKEY = "rockset.apikey";
   public static final String ROCKSET_COLLECTION = "rockset.collection";
+  public static final String ROCKSET_WORKSPACE = "rockset.workspace";
   public static final String ROCKSET_TASK_THREADS = "rockset.task.threads";
 
   public RocksetConnectorConfig(ConfigDef config, Map<String, String> originals) {
     super(config, originals, true);
+    checkConfig(originals);
   }
 
   public RocksetConnectorConfig(Map<String, String> parsedConfig) {
@@ -57,12 +60,33 @@ public class RocksetConnectorConfig extends AbstractConfig {
         )
 
         .define(
+            ConfigKeyBuilder.of(ROCKSET_WORKSPACE, Type.STRING)
+                .documentation("Rockset workspace that incoming documents will be written to.")
+                .importance(Importance.HIGH)
+                .defaultValue("commons")
+                .build()
+        )
+
+        .define(
             ConfigKeyBuilder.of(FORMAT, Type.STRING)
                 .documentation("Format of the data stream.")
                 .importance(Importance.HIGH)
                 .defaultValue("json")
                 .build()
         );
+  }
+
+  private void checkConfig(Map<String, String> config) throws ConnectException {
+    if (config.containsKey(ROCKSET_APISERVER_URL) &&
+        !(config.get(ROCKSET_APISERVER_URL).endsWith("rockset.com"))) {
+      throw new ConnectException(String.format("Invalid url: %s",
+          config.get(ROCKSET_APISERVER_URL)));
+    }
+    if (config.containsKey(FORMAT) &&
+        !(config.get(FORMAT).equals("json") || config.get(FORMAT).equals("avro"))) {
+      throw new ConnectException(String.format("Invalid format: %s, " +
+          "supported formats are avro and json", config.get(FORMAT)));
+    }
   }
 
   public String getRocksetApiServerUrl() {
@@ -75,6 +99,10 @@ public class RocksetConnectorConfig extends AbstractConfig {
 
   public String getRocksetCollection() {
     return this.getString(ROCKSET_COLLECTION);
+  }
+
+  public String getRocksetWorkspace() {
+    return this.getString(ROCKSET_WORKSPACE);
   }
 
   public int getRocksetTaskThreads() { return this.getInt(ROCKSET_TASK_THREADS); }

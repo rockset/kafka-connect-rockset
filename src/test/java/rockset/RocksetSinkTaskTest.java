@@ -2,6 +2,7 @@ package rockset;
 
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
+import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -45,7 +46,9 @@ public class RocksetSinkTaskTest {
     SchemaBuilder builder = SchemaBuilder.struct()
         .field("name", Schema.STRING_SCHEMA);
     Schema schema = builder.build();
-    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", schema, "{'name':'johnny'}", 0);
+    Struct record = new Struct(schema)
+        .put("name", "johnny");
+    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", schema, record, 0);
     Collection records = new ArrayList();
     records.add(sr);
     RocksetSinkTask rst = new RocksetSinkTask();
