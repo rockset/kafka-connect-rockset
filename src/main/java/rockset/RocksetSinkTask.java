@@ -42,7 +42,7 @@ public class RocksetSinkTask extends SinkTask {
       case "json":
         for (SinkRecord sr : records) {
           executorService.execute(() -> this.rc.addDoc(workspace, collection,
-                                                       sr.value().toString()));
+              sr.value().toString(), sr));
         }
         break;
       case "avro":
@@ -53,7 +53,7 @@ public class RocksetSinkTask extends SinkTask {
             if (val instanceof NonRecordContainer) {
               val = ((NonRecordContainer) val).getValue();
             }
-            this.rc.addDoc(workspace, collection, val.toString());
+            this.rc.addDoc(workspace, collection, val.toString(), sr);
           });
         }
         break;
