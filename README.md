@@ -1,7 +1,7 @@
 
 # Kafka Connect for Rockset
 
-Kafka Connect for [Rockset](https://rockset.com/) is a [Kafka Connect Sink](https://docs.confluent.io/current/connect/index.html). This connector helps you load your data from Kafka Streams into Rockset collections through the [Rockset Streaming Write API](https://docs.rockset.com/source-rockset-streaming-write/). **Only valid JSON documents can be read from Kafka Streams and written to Rockset collections by Kafka Connect for Rockset.**
+Kafka Connect for [Rockset](https://rockset.com/) is a [Kafka Connect Sink](https://docs.confluent.io/current/connect/index.html). This connector helps you load your data from Kafka Streams into Rockset collections through the [Rockset Streaming Write API](https://docs.rockset.com/source-rockset-streaming-write/) and runs in both standalone and distributed mode. **Only valid JSON and Avro documents can be read from Kafka Streams and written to Rockset collections by Kafka Connect for Rockset.**
 
 
 ## Requirements
@@ -39,7 +39,15 @@ Kafka Connect for [Rockset](https://rockset.com/) is a [Kafka Connect Sink](http
 | key.converter | org.apache.kafka.connect.storage.StringConverter  |
 | value.converter | org.apache.kafka.connect.storage.StringConverter |
 | key.converter.schemas.enable | false |
-| value.converter.schemas.enable | false 
+| value.converter.schemas.enable | false |
+
+If you have Avro files in your stream, you can use the AvroConverter that Kafka connect provides. You will also want to set the schema registry url of the converter to a comma-separated list of URLs for Schema Registry instances, which will typically be on port 8081. For more information, see the [Confluent Documentation.](https://docs.confluent.io/current/schema-registry/connect.html)
+
+| Name | Value |
+| key.converter | io.confluent.connect.avro.AvroConverter |
+| key.converter.schema.registry.url | `<list-of-schema-registry-instances>` |
+| value.converter | io.confluent.connect.avro.AvroConverter |
+| value.converter.schema.registry.url | `<list-of-schema-registry-instances>` |
 
 There are sample configuration files that you can use directly in the config/ directory in this project.
 You can verify that your settings match the ones provided in there.
@@ -58,7 +66,8 @@ curl -i http://localhost:8083/connectors -H "Content-Type: application/json" -X 
       "topics": "<your-kafka-topics separated by commas>",
       "rockset.collection": "<your-rockset-collection>",
       "rockset.apikey": "<your-api-key>",
-      "rockset.apiserver.url": "https://api.rs2.usw2.rockset.com"
+      "rockset.apiserver.url": "https://api.rs2.usw2.rockset.com",
+      "format": "json"
     }
 }'
 ```
@@ -99,7 +108,8 @@ See the [the Confluent documentation](https://docs.confluent.io/current/connect/
 | `topics` | List of comma-separated Kafka topics that should be watched by this Rockset Kafka Connector.||
 | `rockset.apiserver.url` | URL of the Rockset API Server to connect to. | https://api.rs2.usw2.rockset.com |
 | `rockset.collection` | The name of the Rockset collection into which this connector will write. |  |
-| `rockset.apikey` | API Key authenticates the connector to write into Rockset collections | |
+| `rockset.apikey` | API Key authenticates the connector to write into Rockset collections. | |
+| `format` | Format of your data. Currently `json` and `avro` are supported. | `json` |
 
 #### Optional Parameters
 
