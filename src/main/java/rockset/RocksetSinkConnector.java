@@ -13,11 +13,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RocksetSinkConnector extends SinkConnector {
+  private static Logger log = LoggerFactory.getLogger(RocksetSinkConnector.class);
   public static final String VERSION = "1.0";
   private Map<String, String> configProperties;
 
   @Override
   public void start(Map<String, String> settings) {
+    log.info("Starting RocksetSinkConnector");
     try {
       configProperties = settings;
       new RocksetConnectorConfig(settings);

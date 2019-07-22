@@ -21,6 +21,7 @@ public class RocksetClientWrapper {
 
   public RocksetClientWrapper(String apiKey, String apiServer) {
     if (this.client == null) {
+      log.info("Creating new Rockset client");
       this.client = new RocksetClient(apiKey, apiServer);
     }
   }

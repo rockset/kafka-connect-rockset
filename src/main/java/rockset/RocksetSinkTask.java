@@ -9,6 +9,8 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
@@ -16,6 +18,7 @@ import java.util.Map;
 import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 
 public class RocksetSinkTask extends SinkTask {
+  private static Logger log = LoggerFactory.getLogger(RocksetSinkTask.class);
   private RocksetClientWrapper rc;
   private ExecutorService executorService;
   RocksetConnectorConfig config;
@@ -49,6 +52,11 @@ public class RocksetSinkTask extends SinkTask {
 
   private void handleRecords(Collection<SinkRecord> records, String format,
                              String workspace, String collection) {
+    log.debug("Adding {} documents to collection {} in workspace {}",
+        records.size(), collection, workspace);
+    if (records.size() == 0) {
+      return;
+    }
     switch (format) {
       case "json":
         for (SinkRecord sr : records) {

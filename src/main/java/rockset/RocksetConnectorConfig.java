@@ -1,16 +1,19 @@
 package rockset;
 
+import com.github.jcustenborder.kafka.connect.utils.config.ConfigKeyBuilder;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.connect.errors.ConnectException;
-import com.github.jcustenborder.kafka.connect.utils.config.ConfigKeyBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 
 public class RocksetConnectorConfig extends AbstractConfig {
+  private static Logger log = LoggerFactory.getLogger(RocksetConnectorConfig.class);
   public static final String FORMAT = "format";
   public static final String ROCKSET_APISERVER_URL = "rockset.apiserver.url";
   public static final String ROCKSET_APIKEY = "rockset.apikey";
@@ -20,6 +23,9 @@ public class RocksetConnectorConfig extends AbstractConfig {
 
   public RocksetConnectorConfig(ConfigDef config, Map<String, String> originals) {
     super(config, originals, true);
+    log.info("Building Rockset connector config. Collection: {}, Workspace: {}, " +
+        "Number of Threads: {}, Format: {}", getRocksetCollection(), getRocksetWorkspace(),
+        getRocksetTaskThreads(), getFormat());
     checkConfig(originals);
   }
 
