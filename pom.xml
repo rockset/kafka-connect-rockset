@@ -43,6 +43,65 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>io.confluent</groupId>
+                <version>0.11.2</version>
+                <artifactId>kafka-connect-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>hub</id>
+                        <goals>
+                            <goal>kafka-connect</goal>
+                        </goals>
+                        <configuration>
+                            <title>Rockset Kafka Connector</title>
+                            <documentationUrl>https://docs.rockset.com/apache-kafka/</documentationUrl>
+                            <description>
+                                Kafka Connect for Rockset is a Kafka Connect Sink.
+
+                                This connector helps you load your data from Kafka Streams into Rockset collections through the Rockset Streaming Write API and runs in both standalone and distributed mode.
+
+                                Only valid JSON and Avro documents can be read from Kafka Streams and written to Rockset collections by Kafka Connect for Rockset.
+                            </description>
+                            <logo>logos/RsLogoRGB_Rockset-Color.png</logo>
+
+                            <supportProviderName>Rockset</supportProviderName>
+                            <supportSummary>Rockset supports the Rockset Kafka Connector.</supportSummary>
+                            <supportUrl>https://docs.rockset.com</supportUrl>
+                            <supportLogo>logos/RsLogoRGB_Rockset-Color.png</supportLogo>
+
+                            <ownerUsername>rockset</ownerUsername>
+                            <ownerType>organization</ownerType>
+                            <ownerName>Rockset</ownerName>
+                            <ownerUrl>https://rockset.com</ownerUrl>
+                            <ownerLogo>logos/RsLogoRGB_Rockset-Color.png</ownerLogo>
+
+                            <componentTypes>
+                                <componentType>sink</componentType>
+                            </componentTypes>
+
+                            <tags>
+                                <tag>Rockset</tag>
+                                <tag>search</tag>
+                                <tag>analytics</tag>
+                                <tag>SQL</tag>
+                            </tags>
+
+                            <requirements>
+                                <requirement>Kafka version 1.0.0+</requirement>
+                                <requirement>Java 8+</requirement>
+                                <requirement>An active Rockset account</requirement>
+                            </requirements>
+
+                            <deliveryGuarantee>
+                                <deliveryGuarantee>exactlyOnce</deliveryGuarantee>
+                            </deliveryGuarantee>
+
+                            <confluentControlCenterIntegration>false</confluentControlCenterIntegration>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <configuration>
