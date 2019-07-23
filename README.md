@@ -44,6 +44,7 @@ Kafka Connect for [Rockset](https://rockset.com/) is a [Kafka Connect Sink](http
 If you have Avro files in your stream, you can use the AvroConverter that Kafka connect provides. You will also want to set the schema registry url of the converter to a comma-separated list of URLs for Schema Registry instances, which will typically be on port 8081. For more information, see the [Confluent Documentation.](https://docs.confluent.io/current/schema-registry/connect.html)
 
 | Name | Value |
+|-------- | ---------------------------- |
 | key.converter | io.confluent.connect.avro.AvroConverter |
 | key.converter.schema.registry.url | `<list-of-schema-registry-instances>` |
 | value.converter | io.confluent.connect.avro.AvroConverter |
