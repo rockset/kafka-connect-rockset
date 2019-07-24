@@ -4,6 +4,7 @@ import io.confluent.connect.avro.AvroData;
 import io.confluent.kafka.serializers.NonRecordContainer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -25,6 +26,7 @@ public class RocksetSinkTask extends SinkTask {
 
   public static final int RETRIES_COUNT = 5;
   public static final int INITIAL_DELAY = 250;
+  public static final double JITTER_FACTOR = 0.2;
 
   @Override
   public void start(Map<String, String> settings) {
@@ -87,7 +89,7 @@ public class RocksetSinkTask extends SinkTask {
     int delay = INITIAL_DELAY;
     while (!success && retries < RETRIES_COUNT) {
       try {
-        Thread.sleep(delay);
+        Thread.sleep((long) (delay * (1 + JITTER_FACTOR * ThreadLocalRandom.current().nextDouble(-1, 1))));
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
