@@ -65,6 +65,7 @@ curl -i http://localhost:8083/connectors -H "Content-Type: application/json" -X 
       "tasks.max": "20",
       "rockset.task.threads": "5",
       "topics": "<your-kafka-topics separated by commas>",
+      "rockset.workspace": "<your-rockset-workspace>",
       "rockset.collection": "<your-rockset-collection>",
       "rockset.apikey": "<your-api-key>",
       "rockset.apiserver.url": "https://api.rs2.usw2.rockset.com",
@@ -108,6 +109,7 @@ See the [the Confluent documentation](https://docs.confluent.io/current/connect/
 | `tasks.max` | The number of tasks generated to handle data collection jobs in parallel. The tasks will be spread evenly across all Rockset Kafka Connector nodes.||
 | `topics` | List of comma-separated Kafka topics that should be watched by this Rockset Kafka Connector.||
 | `rockset.apiserver.url` | URL of the Rockset API Server to connect to. | https://api.rs2.usw2.rockset.com |
+| `rockset.workspace` | The name of the Rockset workspace into which this connector will write. | `commons` |
 | `rockset.collection` | The name of the Rockset collection into which this connector will write. |  |
 | `rockset.apikey` | API Key authenticates the connector to write into Rockset collections. | |
 | `format` | Format of your data. Currently `json` and `avro` are supported. | `json` |
