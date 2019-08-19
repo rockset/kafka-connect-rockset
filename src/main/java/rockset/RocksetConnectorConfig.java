@@ -17,6 +17,7 @@ public class RocksetConnectorConfig extends AbstractConfig {
   public static final String FORMAT = "format";
   public static final String ROCKSET_APISERVER_URL = "rockset.apiserver.url";
   public static final String ROCKSET_APIKEY = "rockset.apikey";
+  public static final String ROCKSET_INTEGRATION_KEY = "rockset.integration.key";
   public static final String ROCKSET_COLLECTION = "rockset.collection";
   public static final String ROCKSET_WORKSPACE = "rockset.workspace";
   public static final String ROCKSET_TASK_THREADS = "rockset.task.threads";
@@ -47,6 +48,14 @@ public class RocksetConnectorConfig extends AbstractConfig {
             ConfigKeyBuilder.of(ROCKSET_APIKEY, Type.STRING)
                 .documentation("Rockset API Key")
                 .importance(Importance.HIGH)
+                .build()
+        )
+
+        .define(
+            ConfigKeyBuilder.of(ROCKSET_INTEGRATION_KEY, Type.STRING)
+                .documentation("Rockset Integration Key")
+                .importance(Importance.HIGH)
+                .defaultValue("")
                 .build()
         )
 
@@ -88,6 +97,13 @@ public class RocksetConnectorConfig extends AbstractConfig {
       throw new ConnectException(String.format("Invalid url: %s",
           config.get(ROCKSET_APISERVER_URL)));
     }
+
+    if (config.containsKey(ROCKSET_INTEGRATION_KEY) &&
+        !(config.get(ROCKSET_INTEGRATION_KEY).startsWith("kafka"))) {
+      throw new ConnectException(String.format("Invalid integration key: %s",
+          config.get(ROCKSET_INTEGRATION_KEY)));
+    }
+
     if (config.containsKey(FORMAT) &&
         !(config.get(FORMAT).equals("json") || config.get(FORMAT).equals("avro"))) {
       throw new ConnectException(String.format("Invalid format: %s, " +
@@ -101,6 +117,10 @@ public class RocksetConnectorConfig extends AbstractConfig {
 
   public String getRocksetApikey() {
     return this.getString(ROCKSET_APIKEY);
+  }
+
+  public String getRocksetIntegrationKey() {
+    return this.getString(ROCKSET_INTEGRATION_KEY);
   }
 
   public String getRocksetCollection() {

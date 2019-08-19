@@ -33,6 +33,34 @@ public class RocksetSinkTaskTest {
 
   }
 
+  public void addDoc(Map settings, Collection records) {
+    {
+      RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
+      Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+          .thenReturn(true);
+      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+      RocksetSinkTask rst = new RocksetSinkTask();
+      rst.start(settings, rc, executorService);
+
+      rst.put(records);
+      Mockito.verify(rc)
+          .addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.any());
+    }
+
+    {
+      RocksetRequestWrapper rr = Mockito.mock(RocksetRequestWrapper.class);
+      Mockito.when(rr.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+          .thenReturn(true);
+      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+      RocksetSinkTask rst = new RocksetSinkTask();
+      rst.start(settings, rr, executorService);
+
+      rst.put(records);
+      Mockito.verify(rr).addDoc(Mockito.anyString(), Mockito.anyString(),
+          Mockito.any(), Mockito.any());
+    }
+  }
+
   @Test
   public void testPutJson() {
     SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, "{\"name\":\"johnny\"}", 0);
@@ -44,14 +72,7 @@ public class RocksetSinkTaskTest {
     settings.put("rockset.collection", "j");
     settings.put("format", "json");
 
-    RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
-    Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(true);
-    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
-    RocksetSinkTask rst = new RocksetSinkTask();
-    rst.start(settings, rc, executorService);
-
-    rst.put(records);
-    Mockito.verify(rc).addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.eq("{\"name\":\"johnny\"}"), Mockito.any());
+    addDoc(settings, records);
   }
 
   @Test
@@ -70,14 +91,7 @@ public class RocksetSinkTaskTest {
     settings.put("rockset.collection", "j");
     settings.put("format", "avro");
 
-    RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
-    Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(true);
-    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
-    RocksetSinkTask rst = new RocksetSinkTask();
-    rst.start(settings, rc, executorService);
-
-    rst.put(records);
-    Mockito.verify(rc).addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.eq("{\"name\": \"johnny\"}"), Mockito.any());
+    addDoc(settings, records);
   }
 
   @Test
@@ -90,14 +104,28 @@ public class RocksetSinkTaskTest {
     settings.put("rockset.apikey", "5");
     settings.put("rockset.collection", "j");
 
-    RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
-    Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(false);
-    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
-    RocksetSinkTask rst = new RocksetSinkTask();
-    rst.start(settings, rc, executorService);
+    {
+      RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
+      Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(false);
+      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+      RocksetSinkTask rst = new RocksetSinkTask();
+      rst.start(settings, rc, executorService);
 
-    assertThrows(ConnectException.class, () -> {
-      rst.put(records);
-    });
+      assertThrows(ConnectException.class, () -> {
+        rst.put(records);
+      });
+    }
+
+    {
+      RocksetRequestWrapper rr = Mockito.mock(RocksetRequestWrapper.class);
+      Mockito.when(rr.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(false);
+      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+      RocksetSinkTask rst = new RocksetSinkTask();
+      rst.start(settings, rr, executorService);
+
+      assertThrows(ConnectException.class, () -> {
+        rst.put(records);
+      });
+    }
   }
 }

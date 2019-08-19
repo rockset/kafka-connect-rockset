@@ -20,7 +20,7 @@ import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 
 public class RocksetSinkTask extends SinkTask {
   private static Logger log = LoggerFactory.getLogger(RocksetSinkTask.class);
-  private RocksetClientWrapper rc;
+  private RocksetWrapper rw;
   private ExecutorService executorService;
   RocksetConnectorConfig config;
 
@@ -31,16 +31,15 @@ public class RocksetSinkTask extends SinkTask {
   @Override
   public void start(Map<String, String> settings) {
     this.config = new RocksetConnectorConfig(settings);
-    this.rc = new RocksetClientWrapper(
-        this.config.getRocksetApikey(),
-        this.config.getRocksetApiServerUrl());
+    this.rw = RocksetClientFactory.getRocksetWrapper(config);
     this.executorService = Executors.newFixedThreadPool(this.config.getRocksetTaskThreads());
   }
 
   // used for testing
-  public void start(Map<String, String> settings, RocksetClientWrapper rc, ExecutorService executorService) {
+  public void start(Map<String, String> settings, RocksetWrapper rw,
+                    ExecutorService executorService) {
     this.config = new RocksetConnectorConfig(settings);
-    this.rc = rc;
+    this.rw = rw;
     this.executorService = executorService;
   }
 
@@ -84,7 +83,7 @@ public class RocksetSinkTask extends SinkTask {
   }
 
   private void addWithRetries(String workspace, String collection, String doc, SinkRecord sr) {
-    boolean success = this.rc.addDoc(workspace, collection, doc, sr);
+    boolean success = this.rw.addDoc(workspace, collection, doc, sr);
     int retries = 0;
     int delay = INITIAL_DELAY;
     while (!success && retries < RETRIES_COUNT) {
@@ -93,7 +92,7 @@ public class RocksetSinkTask extends SinkTask {
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
-      success = this.rc.addDoc(workspace, collection, doc, sr);
+      success = this.rw.addDoc(workspace, collection, doc, sr);
       retries += 1;
       delay *= 2;
     }

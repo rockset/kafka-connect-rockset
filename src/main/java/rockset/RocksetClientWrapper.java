@@ -5,37 +5,39 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rockset.client.ApiException;
 import com.rockset.client.RocksetClient;
 import com.rockset.client.model.AddDocumentsRequest;
-import com.rockset.client.model.AddDocumentsResponse;
 import com.rockset.client.model.ErrorModel;
 import java.util.LinkedList;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RocksetClientWrapper {
+public class RocksetClientWrapper implements RocksetWrapper {
   private static Logger log = LoggerFactory.getLogger(RocksetClientWrapper.class);
   private RocksetClient client;
+  private ObjectMapper mapper;
 
   public RocksetClientWrapper(String apiKey, String apiServer) {
     if (this.client == null) {
       log.info("Creating new Rockset client");
       this.client = new RocksetClient(apiKey, apiServer);
     }
+
+    this.mapper = new ObjectMapper();
   }
 
   // used for testing
   public RocksetClientWrapper(RocksetClient client) {
     this.client = client;
+    this.mapper = new ObjectMapper();
   }
 
   // returns false on a Rockset internalerror exception to retry adding the doc,
   // returns true otherwise
+  @Override
   public boolean addDoc(String workspace, String collection, String json, SinkRecord sr) {
     LinkedList<Object> list = new LinkedList<>();
-    ObjectMapper mapper = new ObjectMapper();
 
     String srId = RocksetSinkUtils.createId(sr);
     try {
@@ -60,19 +62,5 @@ public class RocksetClientWrapper {
           collection, workspace, e.getMessage()));
     }
     return true;
-  }
-
-  private String createId(SinkRecord sr) {
-    if (sr.key() != null) {
-      if (sr.key() instanceof String) {
-        return String.valueOf(sr.key());
-      } else {
-        // only supports string keys
-        throw new ConnectException(String.format("Only keys of type String are supported, " +
-            "key is of type %s", sr.key().getClass()));
-      }
-    } else {
-      return sr.topic() + "+" + sr.kafkaPartition() + "+" + sr.kafkaOffset();
-    }
   }
 }
