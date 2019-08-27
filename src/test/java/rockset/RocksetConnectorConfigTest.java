@@ -17,8 +17,7 @@ public class RocksetConnectorConfigTest {
   @Test
   public void testBadFormat() {
     Map<String, String> badFormatSettings = new HashMap<>();
-    badFormatSettings.put("rockset.apikey", "5");
-    badFormatSettings.put("rockset.collection", "j");
+    badFormatSettings.put("rockset.integration.key", "kafka://5");
     badFormatSettings.put("format", "abc");
 
     assertThrows(ConnectException.class, () -> {
@@ -29,8 +28,7 @@ public class RocksetConnectorConfigTest {
   @Test
   public void testBadUrl() {
     Map<String, String> badUrlSettings = new HashMap<>();
-    badUrlSettings.put("rockset.apikey", "5");
-    badUrlSettings.put("rockset.collection", "j");
+    badUrlSettings.put("rockset.integration.key", "kafka://5");
     badUrlSettings.put("rockset.apiserver.url", "abc.com");
 
     assertThrows(ConnectException.class, () -> {
@@ -41,8 +39,7 @@ public class RocksetConnectorConfigTest {
   @Test
   public void testBadTaskThreads() {
     Map<String, String> badTaskThreadSettings = new HashMap<>();
-    badTaskThreadSettings.put("rockset.apikey", "5");
-    badTaskThreadSettings.put("rockset.collection", "j");
+    badTaskThreadSettings.put("rockset.integration.key", "kafka://5");
     badTaskThreadSettings.put("rockset.task.threads", "abc");
 
     assertThrows(ConfigException.class, () -> {
@@ -53,8 +50,7 @@ public class RocksetConnectorConfigTest {
   @Test
   public void testGoodConfig() {
     Map<String, String> goodSettings = new HashMap<>();
-    goodSettings.put("rockset.apikey", "5");
-    goodSettings.put("rockset.collection", "j");
+    goodSettings.put("rockset.integration.key", "kafka://5");
 
     assertDoesNotThrow(() -> {
       RocksetConnectorConfig rcc = new RocksetConnectorConfig(goodSettings);

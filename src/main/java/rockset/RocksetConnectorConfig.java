@@ -45,13 +45,6 @@ public class RocksetConnectorConfig extends AbstractConfig {
         )
 
         .define(
-            ConfigKeyBuilder.of(ROCKSET_APIKEY, Type.STRING)
-                .documentation("Rockset API Key")
-                .importance(Importance.HIGH)
-                .build()
-        )
-
-        .define(
             ConfigKeyBuilder.of(ROCKSET_INTEGRATION_KEY, Type.STRING)
                 .documentation("Rockset Integration Key")
                 .importance(Importance.HIGH)
@@ -68,25 +61,34 @@ public class RocksetConnectorConfig extends AbstractConfig {
         )
 
         .define(
-            ConfigKeyBuilder.of(ROCKSET_COLLECTION, Type.STRING)
-                .documentation("Rockset collection that incoming documents will be written to.")
+            ConfigKeyBuilder.of(FORMAT, Type.STRING)
+                .documentation("Format of the data stream.")
                 .importance(Importance.HIGH)
+                .defaultValue("json")
+                .build()
+        )
+
+        .define(
+            ConfigKeyBuilder.of(ROCKSET_APIKEY, Type.STRING)
+                .documentation("(Deprecated) Rockset API Key")
+                .importance(Importance.HIGH)
+                .defaultValue("")
+                .build()
+        )
+
+        .define(
+            ConfigKeyBuilder.of(ROCKSET_COLLECTION, Type.STRING)
+                .documentation("(Deprecated) Rockset collection that incoming documents will be written to.")
+                .importance(Importance.HIGH)
+                .defaultValue("")
                 .build()
         )
 
         .define(
             ConfigKeyBuilder.of(ROCKSET_WORKSPACE, Type.STRING)
-                .documentation("Rockset workspace that incoming documents will be written to.")
+                .documentation("(Deprecated) Rockset workspace that incoming documents will be written to.")
                 .importance(Importance.HIGH)
                 .defaultValue("commons")
-                .build()
-        )
-
-        .define(
-            ConfigKeyBuilder.of(FORMAT, Type.STRING)
-                .documentation("Format of the data stream.")
-                .importance(Importance.HIGH)
-                .defaultValue("json")
                 .build()
         );
   }

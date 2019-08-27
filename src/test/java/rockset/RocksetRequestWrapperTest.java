@@ -34,7 +34,7 @@ public class RocksetRequestWrapperTest {
     Mockito.when(call.execute()).thenReturn(response);
 
     RocksetRequestWrapper rrw =
-        new RocksetRequestWrapper("integration_key", client);
+        new RocksetRequestWrapper("integration_key", "https://api_server", client);
     assert(rrw.addDoc(workspace, collection, json, sr));
   }
 }

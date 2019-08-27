@@ -15,7 +15,6 @@ import rockset.models.KafkaDocumentsRequest;
 import rockset.models.KafkaMessage;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.Map;
@@ -25,28 +24,29 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
   public static final MediaType JSON = MediaType.parse("application/json");
 
-  // TODO fill this
-  private final String ROCKSET_APISERVER = "https://api.rs2.usw2.rockset.com";
   private final String KAFKA_ENDPOINT = "/v1/receivers/kafka";
 
   private OkHttpClient client;
   private String integrationKeyEncoded;
   private ObjectMapper mapper;
+  private String apiServer;
 
-  public RocksetRequestWrapper(String integrationKey) {
+  public RocksetRequestWrapper(String integrationKey, String apiServer) {
     if (client == null) {
       client = new OkHttpClient();
     }
 
     parseConnectionString(integrationKey);
+    this.apiServer = apiServer;
     this.mapper = new ObjectMapper();
   }
 
   // used for testing
-  public RocksetRequestWrapper(String integrationKey, OkHttpClient client) {
+  public RocksetRequestWrapper(String integrationKey, String apiServer, OkHttpClient client) {
     this.client = client;
 
     parseConnectionString(integrationKey);
+    this.apiServer = apiServer;
     this.mapper = new ObjectMapper();
   }
 
@@ -83,7 +83,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
     try {
       RequestBody requestBody = RequestBody.create(JSON, mapper.writeValueAsString(documentsRequest));
       Request request = new Request.Builder()
-          .url(ROCKSET_APISERVER + KAFKA_ENDPOINT)
+          .url(this.apiServer + KAFKA_ENDPOINT)
           .addHeader("Authorization", "Basic " + integrationKeyEncoded)
           .post(requestBody)
           .build();
