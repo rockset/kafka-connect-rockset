@@ -39,18 +39,6 @@ public class RocksetConnectorConfigTest {
   }
 
   @Test
-  public void testBadTaskThreads() {
-    Map<String, String> badTaskThreadSettings = new HashMap<>();
-    badTaskThreadSettings.put("rockset.apikey", "5");
-    badTaskThreadSettings.put("rockset.collection", "j");
-    badTaskThreadSettings.put("rockset.task.threads", "abc");
-
-    assertThrows(ConfigException.class, () -> {
-      RocksetConnectorConfig rcc = new RocksetConnectorConfig(badTaskThreadSettings);
-    });
-  }
-
-  @Test
   public void testGoodConfig() {
     Map<String, String> goodSettings = new HashMap<>();
     goodSettings.put("rockset.apikey", "5");
