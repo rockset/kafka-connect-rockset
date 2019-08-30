@@ -1,6 +1,6 @@
 # Rockset Kafka Connect Changelog
 
-## v1.1.0 2019-08-30
+## v1.0.1 2019-08-30
 - Handle failures and report it to Kafka for retries
 
 ## v1.0.0 2019-07-23
