@@ -16,6 +16,7 @@ import rockset.models.KafkaMessage;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -60,25 +61,31 @@ public class RocksetRequestWrapper implements RocksetWrapper {
   }
 
   @Override
-  public boolean addDoc(String workspace, String collection, String json, SinkRecord sr) {
+  public boolean addDoc(String workspace, String collection, String topic,
+                        Collection<SinkRecord> records, RecordParser recordParser) {
     LinkedList<KafkaMessage> list = new LinkedList<>();
 
-    String srId = RocksetSinkUtils.createId(sr);
-    try {
-      Map<String, Object> doc = mapper.readValue(json, new TypeReference<Map<String, Object>>(){});
-      doc.put("_id", srId);
-      KafkaMessage message = new KafkaMessage()
-          .document(doc)
-          .offset(sr.kafkaOffset())
-          .partition(sr.kafkaPartition());
-      list.add(message);
-    } catch (Exception e) {
-      throw new ConnectException("Invalid JSON encountered in stream " + e);
+    for (SinkRecord record : records) {
+      String srId = RocksetSinkUtils.createId(record);
+      try {
+        Object val = recordParser.parse(record);
+        Map<String, Object> doc = mapper.readValue(val.toString(), new TypeReference<Map<String, Object>>() {
+        });
+        doc.put("_id", srId);
+        KafkaMessage message = new KafkaMessage()
+            .document(doc)
+            .offset(record.kafkaOffset())
+            .partition(record.kafkaPartition());
+        list.add(message);
+      }
+      catch (Exception e) {
+        throw new ConnectException("Invalid JSON encountered in stream " + e);
+      }
     }
 
     KafkaDocumentsRequest documentsRequest = new KafkaDocumentsRequest()
         .kafkaMessages(list)
-        .topic(sr.topic());
+        .topic(topic);
 
     try {
       RequestBody requestBody = RequestBody.create(JSON, mapper.writeValueAsString(documentsRequest));
@@ -95,9 +102,8 @@ public class RocksetRequestWrapper implements RocksetWrapper {
         }
 
         if (response.code() != 200) {
-          throw new ConnectException(String.format("Unable to write document " +
-                  "to collection %s, workspace %s in Rockset, cause: %s",
-              collection, workspace, response.message()));
+          throw new ConnectException(String.format("Unable to write document"
+                  + " in Rockset, cause: %s", response.message()));
         }
       }
     } catch (Exception e) {

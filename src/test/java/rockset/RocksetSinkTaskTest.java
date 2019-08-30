@@ -2,10 +2,13 @@ package rockset;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.concurrent.ExecutorService;
+
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
-import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -36,7 +39,8 @@ public class RocksetSinkTaskTest {
   public void addDoc(Map settings, Collection records) {
     {
       RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
-      Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+      Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(),
+          Mockito.any(), Mockito.any()))
           .thenReturn(true);
       ExecutorService executorService = MoreExecutors.newDirectExecutorService();
       RocksetSinkTask rst = new RocksetSinkTask();
@@ -44,19 +48,21 @@ public class RocksetSinkTaskTest {
 
       rst.put(records);
       Mockito.verify(rc)
-          .addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.any());
+          .addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
+              Mockito.any(), Mockito.any());
     }
 
     {
       RocksetRequestWrapper rr = Mockito.mock(RocksetRequestWrapper.class);
-      Mockito.when(rr.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+      Mockito.when(rr.addDoc(Mockito.any(), Mockito.any(), Mockito.any(),
+          Mockito.any(), Mockito.any()))
           .thenReturn(true);
       ExecutorService executorService = MoreExecutors.newDirectExecutorService();
       RocksetSinkTask rst = new RocksetSinkTask();
       rst.start(settings, rr, executorService);
 
       rst.put(records);
-      Mockito.verify(rr).addDoc(Mockito.anyString(), Mockito.anyString(),
+      Mockito.verify(rr).addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
           Mockito.any(), Mockito.any());
     }
   }
@@ -95,7 +101,7 @@ public class RocksetSinkTaskTest {
   }
 
   @Test
-  public void testRetries() {
+  public void testRetriesPut() {
     SinkRecord sr = new SinkRecord("testRetries", 1, null, "key", null, "{\"name\":\"johnny\"}", 0);
     Collection records = new ArrayList();
     records.add(sr);
@@ -104,28 +110,40 @@ public class RocksetSinkTaskTest {
     settings.put("rockset.apikey", "5");
     settings.put("rockset.collection", "j");
 
-    {
-      RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
-      Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(false);
-      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
-      RocksetSinkTask rst = new RocksetSinkTask();
-      rst.start(settings, rc, executorService);
+    RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
+    // second put should throw RetriableException
+    Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(),
+        Mockito.any(), Mockito.any())).thenReturn(false);
+    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+    RocksetSinkTask rst = new RocksetSinkTask();
+    rst.start(settings, rc, executorService);
+    rst.put(records);
+    assertThrows(RetriableException.class, () -> {
+      rst.put(records);
+    });
+  }
 
-      assertThrows(ConnectException.class, () -> {
-        rst.put(records);
-      });
-    }
+  @Test
+  public void testRetriesFlush() {
+    SinkRecord sr = new SinkRecord("testRetries", 1, null, "key", null, "{\"name\":\"johnny\"}", 0);
+    Collection records = new ArrayList();
+    records.add(sr);
 
-    {
-      RocksetRequestWrapper rr = Mockito.mock(RocksetRequestWrapper.class);
-      Mockito.when(rr.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(false);
-      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
-      RocksetSinkTask rst = new RocksetSinkTask();
-      rst.start(settings, rr, executorService);
+    Map settings = new HashMap();
+    settings.put("rockset.apikey", "5");
+    settings.put("rockset.collection", "j");
 
-      assertThrows(ConnectException.class, () -> {
-        rst.put(records);
-      });
-    }
+    RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
+    Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+        Mockito.any())).thenReturn(false);
+    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+    RocksetSinkTask rst = new RocksetSinkTask();
+    rst.start(settings, rc, executorService);
+    rst.put(records);
+    Map<TopicPartition, OffsetAndMetadata> map = new HashMap();
+    map.put(new TopicPartition("testRetries", 1), new OffsetAndMetadata(1L));
+    assertThrows(RetriableException.class, () -> {
+      rst.flush(map);
+    });
   }
 }
