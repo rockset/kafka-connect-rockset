@@ -108,7 +108,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
         if (response.code() != 200) {
           throw new ConnectException(String.format("Unable to write document"
-                  + " in Rockset, cause: %s", response.message()), e);
+                  + " in Rockset, cause: %s", response.message()));
         }
       }
     } catch (Exception e) {
