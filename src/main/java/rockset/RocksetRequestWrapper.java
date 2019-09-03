@@ -19,6 +19,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class RocksetRequestWrapper implements RocksetWrapper {
   private static Logger log = LoggerFactory.getLogger(RocksetClientWrapper.class);
@@ -34,7 +35,11 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
   public RocksetRequestWrapper(String integrationKey, String apiServer) {
     if (client == null) {
-      client = new OkHttpClient();
+      client = new OkHttpClient.Builder()
+          .connectTimeout(1, TimeUnit.MINUTES)
+          .writeTimeout(1, TimeUnit.MINUTES)
+          .readTimeout(1, TimeUnit.MINUTES)
+          .build();
     }
 
     parseConnectionString(integrationKey);
