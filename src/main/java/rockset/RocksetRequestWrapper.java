@@ -79,7 +79,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
         list.add(message);
       }
       catch (Exception e) {
-        throw new ConnectException("Invalid JSON encountered in stream " + e);
+        throw new ConnectException("Invalid JSON encountered in stream ", e);
       }
     }
 
@@ -103,7 +103,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
         if (response.code() != 200) {
           throw new ConnectException(String.format("Unable to write document"
-                  + " in Rockset, cause: %s", response.message()));
+                  + " in Rockset, cause: %s", response.message()), e);
         }
       }
     } catch (Exception e) {

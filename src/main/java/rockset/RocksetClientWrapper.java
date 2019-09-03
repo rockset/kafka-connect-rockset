@@ -55,7 +55,7 @@ public class RocksetClientWrapper implements RocksetWrapper {
         doc.put("_id", srId);
         list.add(doc);
       } catch (Exception e) {
-        throw new ConnectException("Invalid JSON encountered in stream");
+        throw new ConnectException("Invalid JSON encountered in stream", e);
       }
     }
 
