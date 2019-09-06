@@ -65,6 +65,10 @@ public class RocksetRequestWrapper implements RocksetWrapper {
     return Base64.getEncoder().encodeToString(userPassword.getBytes(StandardCharsets.UTF_8));
   }
 
+  private boolean isInternalError(int code) {
+    return code == 500 || code == 502 || code == 503 || code == 504;
+  }
+
   @Override
   public boolean addDoc(String workspace, String collection, String topic,
                         Collection<SinkRecord> records, RecordParser recordParser) {
@@ -101,7 +105,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
           .build();
 
       try (Response response = client.newCall(request).execute()) {
-        if (response.code() == 500) {
+        if (isInternalError(response.code())) {
           // return false to retry
           return false;
         }
