@@ -21,7 +21,7 @@ public class RocksetClientWrapperTest {
 
     RocksetClientWrapper rcw = new RocksetClientWrapper(Mockito.mock(RocksetClient.class));
     Assert.assertTrue(rcw.addDoc(workspace, collection, "testPut",
-        Arrays.asList(sr), new JsonParser()));
+        Arrays.asList(sr), new JsonParser(), 10));
   }
 
   @Test
@@ -39,6 +39,6 @@ public class RocksetClientWrapperTest {
     RocksetClientWrapper rcw = new RocksetClientWrapper(Mockito.mock(RocksetClient.class));
 
     Assert.assertTrue(rcw.addDoc(workspace, collection, "testPut",
-        Arrays.asList(sr), new AvroParser()));
+        Arrays.asList(sr), new AvroParser(), 10));
   }
 }

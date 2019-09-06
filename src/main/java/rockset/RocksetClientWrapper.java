@@ -8,6 +8,7 @@ import com.rockset.client.model.AddDocumentsRequest;
 
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -42,25 +43,41 @@ public class RocksetClientWrapper implements RocksetWrapper {
   // returns true otherwise
   @Override
   public boolean addDoc(String workspace, String collection, String topic,
-                        Collection<SinkRecord> records, RecordParser recordParser) {
-    LinkedList<Object> list = new LinkedList<>();
+                        Collection<SinkRecord> records, RecordParser recordParser, int batchSize) {
+    List<Object> messages = new LinkedList<>();
 
     for (SinkRecord record : records) {
+      // if the size exceeds batchsize, send the docs
+      if (messages.size() >= batchSize) {
+        // if sendDocs failed returned false
+        if (!sendDocs(topic, workspace, collection, messages)) {
+          return false;
+        }
+
+        messages.clear();
+      }
+
       String srId = RocksetSinkUtils.createId(record);
       try {
         Object val = recordParser.parse(record);
         Map<String, Object> doc = mapper.readValue(val.toString(),
             new TypeReference<Map<String, Object>>() {
-        });
+            });
         doc.put("_id", srId);
-        list.add(doc);
-      } catch (Exception e) {
+        messages.add(doc);
+      }
+      catch (Exception e) {
         throw new ConnectException("Invalid JSON encountered in stream", e);
       }
     }
 
+    return sendDocs(topic, workspace, collection, messages);
+  }
+
+  private boolean sendDocs(String topic, String workspace, String collection,
+                           List<Object> messages) {
     try {
-      AddDocumentsRequest documentsRequest = new AddDocumentsRequest().data(list);
+      AddDocumentsRequest documentsRequest = new AddDocumentsRequest().data(messages);
       client.addDocuments(workspace, collection, documentsRequest);
     } catch (Exception e) {
       if (isInternalError(e)) {

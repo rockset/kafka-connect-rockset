@@ -1,5 +1,7 @@
 package rockset;
 
+import static org.testng.Assert.assertTrue;
+
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
@@ -46,7 +48,9 @@ public class RocksetRequestWrapperTest {
 
     RocksetRequestWrapper rrw =
         new RocksetRequestWrapper("integration_key", "https://api_server", client);
-    assert(rrw.addDoc(workspace, collection, "testPut", Arrays.asList(sr), new JsonParser()));
+    assertTrue(rrw.addDoc(workspace, collection, "testPut", Arrays.asList(sr), new JsonParser(), 10));
+
+    Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
   }
 
   @Test
@@ -65,6 +69,26 @@ public class RocksetRequestWrapperTest {
 
     RocksetRequestWrapper rrw =
         new RocksetRequestWrapper("integration_key", "https://api_server", client);
-    assert(rrw.addDoc(workspace, collection, "testPut", Arrays.asList(sr), new AvroParser()));
+
+    assertTrue(rrw.addDoc(workspace, collection, "testPut", Arrays.asList(sr), new AvroParser(), 10));
+
+    Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
+  }
+
+  @Test
+  public void testAddDocBatch() throws Exception {
+    String workspace = "commons";
+    String collection = "foo";
+    SinkRecord sr1 = new SinkRecord("testPut1", 1, null, "key", null, "{\"name\": \"johnny\"}", 1);
+    SinkRecord sr2 = new SinkRecord("testPut2", 1, null, "key", null, "{\"name\": \"johnny\"}", 2);
+
+    OkHttpClient client = getMockOkHttpClient();
+
+    RocksetRequestWrapper rrw =
+        new RocksetRequestWrapper("integration_key", "https://api_server", client);
+
+    assertTrue(rrw.addDoc(workspace, collection, "testPut", Arrays.asList(sr1, sr2), new JsonParser(), 1));
+
+    Mockito.verify(client, Mockito.times(2)).newCall(Mockito.any());
   }
 }

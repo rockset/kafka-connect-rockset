@@ -30,7 +30,7 @@ public class RocksetSinkTask extends SinkTask {
   private RocksetConnectorConfig config;
   private RecordParser recordParser;
 
-
+  public static final int BATCH_SIZE = 1000;
   public static final int RETRIES_COUNT = 5;
   public static final int INITIAL_DELAY = 250;
   public static final double JITTER_FACTOR = 0.2;
@@ -146,7 +146,8 @@ public class RocksetSinkTask extends SinkTask {
   private CompletableFuture addWithRetries(String workspace, String collection, String topic,
                               Collection<SinkRecord> records) {
     return CompletableFuture.runAsync(() -> {
-      boolean success = this.rw.addDoc(workspace, collection, topic, records, recordParser);
+      boolean success = this.rw.addDoc(workspace, collection, topic, records,
+          recordParser, BATCH_SIZE);
       int retries = 0;
       int delay = INITIAL_DELAY;
       while (!success && retries < RETRIES_COUNT) {
@@ -158,7 +159,7 @@ public class RocksetSinkTask extends SinkTask {
           Thread.currentThread().interrupt();
         }
         // addDoc throws ConnectException if it's not Internal Error
-        success = this.rw.addDoc(workspace, collection, topic, records, recordParser);
+        success = this.rw.addDoc(workspace, collection, topic, records, recordParser, BATCH_SIZE);
         retries += 1;
         delay *= 2;
       }

@@ -2,6 +2,7 @@ package rockset;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -18,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +35,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
   private ObjectMapper mapper;
   private String apiServer;
 
-  public RocksetRequestWrapper(String integrationKey, String apiServer) {
+  public RocksetRequestWrapper(String integrationKey,String apiServer) {
     if (client == null) {
       client = new OkHttpClient.Builder()
           .connectTimeout(1, TimeUnit.MINUTES)
@@ -48,7 +50,8 @@ public class RocksetRequestWrapper implements RocksetWrapper {
   }
 
   // used for testing
-  public RocksetRequestWrapper(String integrationKey, String apiServer, OkHttpClient client) {
+  public RocksetRequestWrapper(String integrationKey, String apiServer,
+                               OkHttpClient client) {
     this.client = client;
 
     parseConnectionString(integrationKey);
@@ -71,10 +74,21 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
   @Override
   public boolean addDoc(String workspace, String collection, String topic,
-                        Collection<SinkRecord> records, RecordParser recordParser) {
-    LinkedList<KafkaMessage> list = new LinkedList<>();
+                        Collection<SinkRecord> records, RecordParser recordParser,
+                        int batchSize) {
+    List<KafkaMessage> messages = new LinkedList<>();
 
     for (SinkRecord record : records) {
+      // if the size exceeds batchsize, send the docs
+      if (messages.size() >= batchSize) {
+        // if sendDocs failed returned false
+        if (!sendDocs(topic, messages)) {
+          return false;
+        }
+
+        messages.clear();
+      }
+
       String srId = RocksetSinkUtils.createId(record);
       try {
         Object val = recordParser.parse(record);
@@ -85,15 +99,21 @@ public class RocksetRequestWrapper implements RocksetWrapper {
             .document(doc)
             .offset(record.kafkaOffset())
             .partition(record.kafkaPartition());
-        list.add(message);
+        messages.add(message);
       }
       catch (Exception e) {
         throw new ConnectException("Invalid JSON encountered in stream ", e);
       }
     }
 
+    return sendDocs(topic, messages);
+  }
+
+  private boolean sendDocs(String topic, List<KafkaMessage> messages) {
+    Preconditions.checkArgument(!messages.isEmpty());
+
     KafkaDocumentsRequest documentsRequest = new KafkaDocumentsRequest()
-        .kafkaMessages(list)
+        .kafkaMessages(messages)
         .topic(topic);
 
     try {

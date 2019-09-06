@@ -40,7 +40,7 @@ public class RocksetSinkTaskTest {
     {
       RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
       Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(),
-          Mockito.any(), Mockito.any()))
+          Mockito.any(), Mockito.any(), Mockito.anyInt()))
           .thenReturn(true);
       ExecutorService executorService = MoreExecutors.newDirectExecutorService();
       RocksetSinkTask rst = new RocksetSinkTask();
@@ -49,13 +49,13 @@ public class RocksetSinkTaskTest {
       rst.put(records);
       Mockito.verify(rc)
           .addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
-              Mockito.any(), Mockito.any());
+              Mockito.any(), Mockito.any(), Mockito.anyInt());
     }
 
     {
       RocksetRequestWrapper rr = Mockito.mock(RocksetRequestWrapper.class);
       Mockito.when(rr.addDoc(Mockito.any(), Mockito.any(), Mockito.any(),
-          Mockito.any(), Mockito.any()))
+          Mockito.any(), Mockito.any(), Mockito.anyInt()))
           .thenReturn(true);
       ExecutorService executorService = MoreExecutors.newDirectExecutorService();
       RocksetSinkTask rst = new RocksetSinkTask();
@@ -63,7 +63,7 @@ public class RocksetSinkTaskTest {
 
       rst.put(records);
       Mockito.verify(rr).addDoc(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
-          Mockito.any(), Mockito.any());
+          Mockito.any(), Mockito.any(), Mockito.anyInt());
     }
   }
 
@@ -113,7 +113,7 @@ public class RocksetSinkTaskTest {
     RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
     // second put should throw RetriableException
     Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(),
-        Mockito.any(), Mockito.any())).thenReturn(false);
+        Mockito.any(), Mockito.any(), Mockito.anyInt())).thenReturn(false);
     ExecutorService executorService = MoreExecutors.newDirectExecutorService();
     RocksetSinkTask rst = new RocksetSinkTask();
     rst.start(settings, rc, executorService);
@@ -135,7 +135,7 @@ public class RocksetSinkTaskTest {
 
     RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
     Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
-        Mockito.any())).thenReturn(false);
+        Mockito.any(), Mockito.anyInt())).thenReturn(false);
     ExecutorService executorService = MoreExecutors.newDirectExecutorService();
     RocksetSinkTask rst = new RocksetSinkTask();
     rst.start(settings, rc, executorService);
