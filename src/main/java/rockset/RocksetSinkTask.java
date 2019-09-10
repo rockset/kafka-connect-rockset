@@ -36,7 +36,7 @@ public class RocksetSinkTask extends SinkTask {
   public static final double JITTER_FACTOR = 0.2;
 
   private RecordParser getRecordParser(String format) {
-    switch (format) {
+    switch (format.toLowerCase()) {
       case "json":
         return new JsonParser();
       case "avro":

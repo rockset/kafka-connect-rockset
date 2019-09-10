@@ -76,7 +76,7 @@ public class RocksetSinkTaskTest {
     Map settings = new HashMap();
     settings.put("rockset.apikey", "5");
     settings.put("rockset.collection", "j");
-    settings.put("format", "json");
+    settings.put("format", "JSON");
 
     addDoc(settings, records);
   }

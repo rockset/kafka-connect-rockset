@@ -106,8 +106,8 @@ public class RocksetConnectorConfig extends AbstractConfig {
           config.get(ROCKSET_INTEGRATION_KEY)));
     }
 
-    if (config.containsKey(FORMAT) &&
-        !(config.get(FORMAT).equals("json") || config.get(FORMAT).equals("avro"))) {
+    if (config.containsKey(FORMAT) && !(config.get(FORMAT).equalsIgnoreCase("json")
+            || config.get(FORMAT).equalsIgnoreCase("avro"))) {
       throw new ConnectException(String.format("Invalid format: %s, " +
           "supported formats are avro and json", config.get(FORMAT)));
     }

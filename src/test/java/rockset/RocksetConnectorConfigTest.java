@@ -51,6 +51,7 @@ public class RocksetConnectorConfigTest {
   public void testGoodConfig() {
     Map<String, String> goodSettings = new HashMap<>();
     goodSettings.put("rockset.integration.key", "kafka://5");
+    goodSettings.put("format", "jSon");
 
     assertDoesNotThrow(() -> {
       RocksetConnectorConfig rcc = new RocksetConnectorConfig(goodSettings);
