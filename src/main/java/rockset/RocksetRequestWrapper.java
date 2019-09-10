@@ -35,7 +35,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
   private ObjectMapper mapper;
   private String apiServer;
 
-  public RocksetRequestWrapper(String integrationKey,String apiServer) {
+  public RocksetRequestWrapper(RocksetConnectorConfig config) {
     if (client == null) {
       client = new OkHttpClient.Builder()
           .connectTimeout(1, TimeUnit.MINUTES)
@@ -44,18 +44,18 @@ public class RocksetRequestWrapper implements RocksetWrapper {
           .build();
     }
 
-    parseConnectionString(integrationKey);
-    this.apiServer = apiServer;
+    parseConnectionString(config.getRocksetIntegrationKey());
+    this.apiServer = config.getRocksetApiServerUrl();
     this.mapper = new ObjectMapper();
   }
 
   // used for testing
-  public RocksetRequestWrapper(String integrationKey, String apiServer,
+  public RocksetRequestWrapper(RocksetConnectorConfig config,
                                OkHttpClient client) {
     this.client = client;
 
-    parseConnectionString(integrationKey);
-    this.apiServer = apiServer;
+    parseConnectionString(config.getRocksetApiServerUrl());
+    this.apiServer = config.getRocksetApiServerUrl();
     this.mapper = new ObjectMapper();
   }
 
@@ -73,9 +73,8 @@ public class RocksetRequestWrapper implements RocksetWrapper {
   }
 
   @Override
-  public boolean addDoc(String workspace, String collection, String topic,
-                        Collection<SinkRecord> records, RecordParser recordParser,
-                        int batchSize) {
+  public boolean addDoc(String topic, Collection<SinkRecord> records,
+                        RecordParser recordParser, int batchSize) {
     List<KafkaMessage> messages = new LinkedList<>();
 
     for (SinkRecord record : records) {

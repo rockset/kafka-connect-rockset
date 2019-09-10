@@ -19,38 +19,44 @@ public class RocksetClientWrapper implements RocksetWrapper {
   private static Logger log = LoggerFactory.getLogger(RocksetClientWrapper.class);
   private RocksetClient client;
   private ObjectMapper mapper;
+  private String workspace;
+  private String collection;
 
-  public RocksetClientWrapper(String apiKey, String apiServer) {
+  public RocksetClientWrapper(RocksetConnectorConfig config) {
     if (this.client == null) {
       log.info("Creating new Rockset client");
-      this.client = new RocksetClient(apiKey, apiServer);
+      this.client = new RocksetClient(config.getRocksetApikey(), config.getRocksetApiServerUrl());
     }
 
     this.mapper = new ObjectMapper();
+    this.workspace = config.getRocksetWorkspace();
+    this.collection = config.getRocksetCollection();
   }
 
   // used for testing
-  public RocksetClientWrapper(RocksetClient client) {
+  public RocksetClientWrapper(RocksetConnectorConfig config, RocksetClient client) {
     this.client = client;
     this.mapper = new ObjectMapper();
+    this.workspace = config.getRocksetWorkspace();
+    this.collection = config.getRocksetCollection();
   }
 
   private boolean isInternalError(Throwable e) {
     return (e instanceof ApiException && ((ApiException) e).getCode() == 500);
   }
 
-  // returns false on a Rockset internalerror exception to retry adding the doc,
+  // returns false on a Rockset internal error exception to retry adding the doc,
   // returns true otherwise
   @Override
-  public boolean addDoc(String workspace, String collection, String topic,
-                        Collection<SinkRecord> records, RecordParser recordParser, int batchSize) {
+  public boolean addDoc(String topic, Collection<SinkRecord> records,
+                        RecordParser recordParser, int batchSize) {
     List<Object> messages = new LinkedList<>();
 
     for (SinkRecord record : records) {
       // if the size exceeds batchsize, send the docs
       if (messages.size() >= batchSize) {
         // if sendDocs failed returned false
-        if (!sendDocs(topic, workspace, collection, messages)) {
+        if (!sendDocs(topic, messages)) {
           return false;
         }
 
@@ -71,11 +77,10 @@ public class RocksetClientWrapper implements RocksetWrapper {
       }
     }
 
-    return sendDocs(topic, workspace, collection, messages);
+    return sendDocs(topic, messages);
   }
 
-  private boolean sendDocs(String topic, String workspace, String collection,
-                           List<Object> messages) {
+  private boolean sendDocs(String topic, List<Object> messages) {
     try {
       AddDocumentsRequest documentsRequest = new AddDocumentsRequest().data(messages);
       client.addDocuments(workspace, collection, documentsRequest);

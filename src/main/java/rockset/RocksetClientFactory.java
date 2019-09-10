@@ -3,17 +3,17 @@ package rockset;
 public class RocksetClientFactory {
   public static RocksetWrapper getRocksetWrapper(RocksetConnectorConfig config) {
     if (!config.getRocksetIntegrationKey().isEmpty()) {
-      return getRocksetRequest(config.getRocksetIntegrationKey(), config.getRocksetApiServerUrl());
+      return getRocksetRequest(config);
     }
 
-    return getRocksetClient(config.getRocksetApikey(), config.getRocksetApiServerUrl());
+    return getRocksetClient(config);
   }
 
-  private static RocksetWrapper getRocksetRequest(String integrationKey, String apiServer) {
-    return new RocksetRequestWrapper(integrationKey, apiServer);
+  private static RocksetWrapper getRocksetRequest(RocksetConnectorConfig config) {
+    return new RocksetRequestWrapper(config);
   }
 
-  private static RocksetWrapper getRocksetClient(String apiKey, String apiServer) {
-    return new RocksetClientWrapper(apiKey, apiServer);
+  private static RocksetWrapper getRocksetClient(RocksetConnectorConfig config) {
+    return new RocksetClientWrapper(config);
   }
 }

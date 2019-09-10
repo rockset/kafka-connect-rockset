@@ -67,20 +67,15 @@ public class RocksetSinkTask extends SinkTask {
 
   @Override
   public void put(Collection<SinkRecord> records) {
-    String collection = this.config.getRocksetCollection();
-    String workspace = this.config.getRocksetWorkspace();
-    handleRecords(records, workspace, collection);
+    handleRecords(records);
   }
 
-  private void handleRecords(Collection<SinkRecord> records,
-                             String workspace, String collection) {
-    log.debug("Adding {} documents to collection {} in workspace {}",
-        records.size(), collection, workspace);
+  private void handleRecords(Collection<SinkRecord> records) {
     if (records.size() == 0) {
       return;
     }
 
-    submitForProcessing(workspace, collection, records);
+    submitForProcessing(records);
   }
 
   private Map<TopicPartition, Collection<SinkRecord>> partitionRecordsByTopic(
@@ -94,8 +89,7 @@ public class RocksetSinkTask extends SinkTask {
     return topicPartitionedRecords;
   }
 
-  private void submitForProcessing(String workspace,  String collection,
-                                   Collection<SinkRecord> records) {
+  private void submitForProcessing(Collection<SinkRecord> records) {
 
     Map<TopicPartition, Collection<SinkRecord>> partitionedRecords =
         partitionRecordsByTopic(records);
@@ -104,7 +98,7 @@ public class RocksetSinkTask extends SinkTask {
       TopicPartition tp = tpe.getKey();
       checkForFailures(tp, false);
       futureMap.computeIfAbsent(tp, k -> new ArrayList<>()).add(
-          addWithRetries(workspace, collection, tp.topic(), tpe.getValue()));
+          addWithRetries(tp.topic(), tpe.getValue()));
     }
   }
 
@@ -143,11 +137,9 @@ public class RocksetSinkTask extends SinkTask {
   }
 
   // TODO improve this logic
-  private CompletableFuture addWithRetries(String workspace, String collection, String topic,
-                              Collection<SinkRecord> records) {
+  private CompletableFuture addWithRetries(String topic, Collection<SinkRecord> records) {
     return CompletableFuture.runAsync(() -> {
-      boolean success = this.rw.addDoc(workspace, collection, topic, records,
-          recordParser, BATCH_SIZE);
+      boolean success = this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
       int retries = 0;
       int delay = INITIAL_DELAY;
       while (!success && retries < RETRIES_COUNT) {
@@ -159,13 +151,13 @@ public class RocksetSinkTask extends SinkTask {
           Thread.currentThread().interrupt();
         }
         // addDoc throws ConnectException if it's not Internal Error
-        success = this.rw.addDoc(workspace, collection, topic, records, recordParser, BATCH_SIZE);
+        success = this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
         retries += 1;
         delay *= 2;
       }
       if (!success) {
         throw new RetriableException(String.format("Add document request timed out "
-            + "for document with collection %s and workspace %s", collection, workspace));
+            + " for topic: %s", topic));
       }
     }, executorService);
   }

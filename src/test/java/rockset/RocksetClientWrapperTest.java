@@ -6,29 +6,38 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.testng.Assert;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RocksetClientWrapperTest {
+  private static RocksetConnectorConfig rcc;
+
+  @BeforeAll
+  public static void setup() {
+    Map<String, String> settings = new HashMap<>();
+    settings.put("rockset.apikey", "dummy");
+    settings.put("rockset.workspace", "kafka-workspace");
+    settings.put("rockset.collection", "kafka-collection");
+    rcc = new RocksetConnectorConfig(settings);
+  }
+
   @Test
   public void testAddDocJson() {
-    String workspace = "commons";
-    String collection = "foo";
     SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, "{\"name\": \"johnny\"}", 0);
 
-    RocksetClientWrapper rcw = new RocksetClientWrapper(Mockito.mock(RocksetClient.class));
-    Assert.assertTrue(rcw.addDoc(workspace, collection, "testPut",
-        Arrays.asList(sr), new JsonParser(), 10));
+    RocksetClientWrapper rcw = new RocksetClientWrapper(rcc, Mockito.mock(RocksetClient.class));
+    Assert.assertTrue(rcw.addDoc("testPut", Arrays.asList(sr),
+        new JsonParser(), 10));
   }
 
   @Test
   public void testAddDocAvro() {
-    String workspace = "commons";
-    String collection = "foo";
-
     Schema schema = SchemaBuilder.struct()
         .field("name", Schema.STRING_SCHEMA)
         .build();
@@ -36,9 +45,9 @@ public class RocksetClientWrapperTest {
         .put("name", "johnny");
     SinkRecord sr = new SinkRecord("testPut", 1, null, "key", schema, record, 0);
 
-    RocksetClientWrapper rcw = new RocksetClientWrapper(Mockito.mock(RocksetClient.class));
+    RocksetClientWrapper rcw = new RocksetClientWrapper(rcc, Mockito.mock(RocksetClient.class));
 
-    Assert.assertTrue(rcw.addDoc(workspace, collection, "testPut",
-        Arrays.asList(sr), new AvroParser(), 10));
+    Assert.assertTrue(rcw.addDoc("testPut", Arrays.asList(sr),
+        new AvroParser(), 10));
   }
 }
