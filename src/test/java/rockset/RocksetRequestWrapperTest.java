@@ -1,5 +1,6 @@
 package rockset;
 
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import okhttp3.Call;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -93,5 +95,20 @@ public class RocksetRequestWrapperTest {
     assertTrue(rrw.addDoc("testPut", Arrays.asList(sr1, sr2), new JsonParser(), 1));
 
     Mockito.verify(client, Mockito.times(2)).newCall(Mockito.any());
+  }
+
+  @Test
+  public void testAddDocRetry() throws Exception {
+    SinkRecord sr1 = new SinkRecord("testPut1", 1, null, "key", null, "{\"name\": \"johnny\"}", 1);
+    OkHttpClient client = getMockOkHttpClient();
+
+    RocksetRequestWrapper rrw = new RocksetRequestWrapper(rcc, client);
+
+    // configure client to throw on execute call
+    Mockito.when(client.newCall(Mockito.any()).execute())
+        .thenThrow(new SocketTimeoutException());
+
+    // addDoc should return false
+    assertFalse(rrw.addDoc("testPut", Arrays.asList(sr1), new JsonParser(), 1));
   }
 }

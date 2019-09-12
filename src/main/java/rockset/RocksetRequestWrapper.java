@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import rockset.models.KafkaDocumentsRequest;
 import rockset.models.KafkaMessage;
 
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collection;
@@ -26,9 +27,9 @@ import java.util.concurrent.TimeUnit;
 public class RocksetRequestWrapper implements RocksetWrapper {
   private static Logger log = LoggerFactory.getLogger(RocksetClientWrapper.class);
 
-  public static final MediaType JSON = MediaType.parse("application/json");
+  private static final MediaType JSON = MediaType.parse("application/json");
 
-  private final String KAFKA_ENDPOINT = "/v1/receivers/kafka";
+  private static final String KAFKA_ENDPOINT = "/v1/receivers/kafka";
 
   private OkHttpClient client;
   private String integrationKeyEncoded;
@@ -134,6 +135,9 @@ public class RocksetRequestWrapper implements RocksetWrapper {
                   + " in Rockset, cause: %s", response.message()));
         }
       }
+    } catch (SocketTimeoutException ste) {
+      log.warn("Encountered socket timeout exception. Can Retry", ste);
+      return false;
     } catch (Exception e) {
       throw new ConnectException(e);
     }
