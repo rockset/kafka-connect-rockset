@@ -8,6 +8,7 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rockset.utils.BlockingExecutor;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,9 +16,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
@@ -25,8 +26,8 @@ import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 public class RocksetSinkTask extends SinkTask {
   private static Logger log = LoggerFactory.getLogger(RocksetSinkTask.class);
   private RocksetWrapper rw;
-  private ExecutorService executorService;
-  private Map<TopicPartition, List<CompletableFuture>> futureMap;
+  private BlockingExecutor executorService;
+  private Map<TopicPartition, List<Future>> futureMap;
   private RocksetConnectorConfig config;
   private RecordParser recordParser;
 
@@ -50,7 +51,10 @@ public class RocksetSinkTask extends SinkTask {
   public void start(Map<String, String> settings) {
     this.config = new RocksetConnectorConfig(settings);
     this.rw = RocksetClientFactory.getRocksetWrapper(config);
-    this.executorService = Executors.newFixedThreadPool(this.config.getRocksetTaskThreads());
+
+    int numThreads = this.config.getRocksetTaskThreads();
+    this.executorService = new BlockingExecutor(numThreads,
+        Executors.newFixedThreadPool(numThreads));
     this.futureMap = new HashMap<>();
     this.recordParser = getRecordParser(config.getFormat());
 
@@ -60,7 +64,7 @@ public class RocksetSinkTask extends SinkTask {
                     ExecutorService executorService) {
     this.config = new RocksetConnectorConfig(settings);
     this.rw = rw;
-    this.executorService = executorService;
+    this.executorService = new BlockingExecutor(config.getRocksetTaskThreads(), executorService);
     this.futureMap = new HashMap<>();
     this.recordParser = getRecordParser(config.getFormat());
     log.info("Starting Rockset Kafka Connect Plugin");
@@ -68,10 +72,6 @@ public class RocksetSinkTask extends SinkTask {
 
   @Override
   public void put(Collection<SinkRecord> records) {
-    handleRecords(records);
-  }
-
-  private void handleRecords(Collection<SinkRecord> records) {
     if (records.size() == 0) {
       log.debug("zero records in put call, returning");
       return;
@@ -92,16 +92,15 @@ public class RocksetSinkTask extends SinkTask {
   }
 
   private void submitForProcessing(Collection<SinkRecord> records) {
-
-    Map<TopicPartition, Collection<SinkRecord>> partitionedRecords =
-        partitionRecordsByTopic(records);
-
-    for (Map.Entry<TopicPartition, Collection<SinkRecord>> tpe : partitionedRecords.entrySet()) {
-      TopicPartition tp = tpe.getKey();
-      checkForFailures(tp, false);
-      futureMap.computeIfAbsent(tp, k -> new ArrayList<>()).add(
-          addWithRetries(tp.topic(), tpe.getValue()));
-    }
+    partitionRecordsByTopic(records).forEach((toppar, recordBatch) -> {
+      try {
+        checkForFailures(toppar, false);
+        futureMap.computeIfAbsent(toppar, k -> new ArrayList<>())
+            .add(executorService.submit(() -> addWithRetries(toppar.topic(), recordBatch)));
+      } catch (InterruptedException e) {
+        throw new ConnectException("Failed to put records", e);
+      }
+    });
   }
 
   private boolean isRetriableException(Throwable e) {
@@ -113,10 +112,10 @@ public class RocksetSinkTask extends SinkTask {
       return;
     }
 
-    List<CompletableFuture> futures = futureMap.get(tp);
-    Iterator<CompletableFuture> futureIterator = futures.iterator();
+    List<Future> futures = futureMap.get(tp);
+    Iterator<Future> futureIterator = futures.iterator();
     while (futureIterator.hasNext()) {
-      CompletableFuture future = futureIterator.next();
+      Future future = futureIterator.next();
       // this is blocking only if wait is true
       if (wait || future.isDone()) {
         try {
@@ -139,31 +138,29 @@ public class RocksetSinkTask extends SinkTask {
   }
 
   // TODO improve this logic
-  private CompletableFuture addWithRetries(String topic, Collection<SinkRecord> records) {
-    return CompletableFuture.runAsync(() -> {
-      log.debug("Adding %s records to Rockset for topic: %s", records.size(), topic);
-      boolean success = this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
-      int retries = 0;
-      int delay = INITIAL_DELAY;
-      while (!success && retries < RETRIES_COUNT) {
-        log.debug("Retrying adding %s docs to Rockset for topic: %s", records.size(), topic);
-        try {
-          Thread.sleep((long) (delay * (1 + JITTER_FACTOR * ThreadLocalRandom.current()
-              .nextDouble(-1, 1))));
-        }
-        catch (InterruptedException ex) {
-          Thread.currentThread().interrupt();
-        }
-        // addDoc throws ConnectException if it's not Internal Error
-        success = this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
-        retries += 1;
-        delay *= 2;
+  private void addWithRetries(String topic, Collection<SinkRecord> records) {
+    log.debug("Adding %s records to Rockset for topic: %s", records.size(), topic);
+    boolean success = this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
+    int retries = 0;
+    int delay = INITIAL_DELAY;
+    while (!success && retries < RETRIES_COUNT) {
+      log.debug("Retrying adding %s docs to Rockset for topic: %s", records.size(), topic);
+      try {
+        Thread.sleep((long) (delay * (1 + JITTER_FACTOR * ThreadLocalRandom.current()
+            .nextDouble(-1, 1))));
       }
-      if (!success) {
-        throw new RetriableException(String.format("Add document request timed out "
-            + " for topic: %s", topic));
+      catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
       }
-    }, executorService);
+      // addDoc throws ConnectException if it's not Internal Error
+      success = this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
+      retries += 1;
+      delay *= 2;
+    }
+    if (!success) {
+      throw new RetriableException(String.format("Add document request timed out "
+          + " for topic: %s", topic));
+    }
   }
 
   @Override
