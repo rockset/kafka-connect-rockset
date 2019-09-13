@@ -63,6 +63,7 @@ public class RocksetSinkTask extends SinkTask {
     this.executorService = executorService;
     this.futureMap = new HashMap<>();
     this.recordParser = getRecordParser(config.getFormat());
+    log.info("Starting Rockset Kafka Connect Plugin");
   }
 
   @Override
@@ -72,6 +73,7 @@ public class RocksetSinkTask extends SinkTask {
 
   private void handleRecords(Collection<SinkRecord> records) {
     if (records.size() == 0) {
+      log.debug("zero records in put call, returning");
       return;
     }
 
@@ -139,10 +141,12 @@ public class RocksetSinkTask extends SinkTask {
   // TODO improve this logic
   private CompletableFuture addWithRetries(String topic, Collection<SinkRecord> records) {
     return CompletableFuture.runAsync(() -> {
+      log.debug("Adding %s records to Rockset for topic: %s", records.size(), topic);
       boolean success = this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
       int retries = 0;
       int delay = INITIAL_DELAY;
       while (!success && retries < RETRIES_COUNT) {
+        log.debug("Retrying adding %s docs to Rockset for topic: %s", records.size(), topic);
         try {
           Thread.sleep((long) (delay * (1 + JITTER_FACTOR * ThreadLocalRandom.current()
               .nextDouble(-1, 1))));
@@ -165,13 +169,16 @@ public class RocksetSinkTask extends SinkTask {
   @Override
   public void flush(Map<TopicPartition, OffsetAndMetadata> map) {
     for (Map.Entry<TopicPartition, OffsetAndMetadata> toe : map.entrySet()) {
+      log.debug("Flusing for topic: %s, partition: %s", toe.getKey(), toe.getValue());
       checkForFailures(toe.getKey(), true);
     }
   }
 
   @Override
   public void stop() {
+    log.info("Stopping Rockset Kafka Connect Plugin, waiting for active tasks to complete");
     executorService.shutdown();
+    log.info("Stopped Rockset Kafka Connect Plugin");
   }
 
   @Override

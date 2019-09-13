@@ -24,8 +24,8 @@ public class RocksetConnectorConfig extends AbstractConfig {
 
   public RocksetConnectorConfig(ConfigDef config, Map<String, String> originals) {
     super(config, originals, true);
-    log.info("Building Rockset connector config. Collection: {}, Workspace: {}, " +
-        "Number of Threads: {}, Format: {}", getRocksetCollection(), getRocksetWorkspace(),
+    log.info("Building Rockset connector config. Apiserver: {}" +
+        "Number of Threads: {}, Format: {}", getRocksetApiServerUrl(),
         getRocksetTaskThreads(), getFormat());
     checkConfig(originals);
   }

@@ -111,6 +111,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
   private boolean sendDocs(String topic, List<KafkaMessage> messages) {
     Preconditions.checkArgument(!messages.isEmpty());
+    log.debug("Sending batch of %s messages for topic: %s to Rockset", messages.size(), topic);
 
     KafkaDocumentsRequest documentsRequest = new KafkaDocumentsRequest()
         .kafkaMessages(messages)
@@ -127,6 +128,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
       try (Response response = client.newCall(request).execute()) {
         if (isInternalError(response.code())) {
           // return false to retry
+          log.debug("Received internal error code: %s", response.code());
           return false;
         }
 
