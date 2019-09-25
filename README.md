@@ -95,7 +95,7 @@ curl http://localhost:8083/connectors/rockset-sink/tasks
 
 ```
 
-See the [the Confluent documentation](https://docs.confluent.io/current/connect/managing.html#common-rest-examples) for more REST examples.
+See the [the Confluent documentation](https://docs.confluent.io/current/connect/managing/monitoring.html) for more REST examples.
 
 ## Configuration
 
