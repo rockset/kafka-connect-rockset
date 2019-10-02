@@ -1,11 +1,14 @@
 package rockset;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.github.jcustenborder.kafka.connect.utils.config.ConfigKeyBuilder;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigDef.Importance;
-import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.common.config.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,12 +25,11 @@ public class RocksetConnectorConfig extends AbstractConfig {
   public static final String ROCKSET_WORKSPACE = "rockset.workspace";
   public static final String ROCKSET_TASK_THREADS = "rockset.task.threads";
 
-  public RocksetConnectorConfig(ConfigDef config, Map<String, String> originals) {
+  private RocksetConnectorConfig(ConfigDef config, Map<String, String> originals) {
     super(config, originals, true);
     log.info("Building Rockset connector config. Apiserver: {}" +
         "Number of Threads: {}, Format: {}", getRocksetApiServerUrl(),
         getRocksetTaskThreads(), getFormat());
-    checkConfig(originals);
   }
 
   public RocksetConnectorConfig(Map<String, String> parsedConfig) {
@@ -40,6 +42,7 @@ public class RocksetConnectorConfig extends AbstractConfig {
             ConfigKeyBuilder.of(ROCKSET_APISERVER_URL, Type.STRING)
                 .documentation("Rockset API Server URL")
                 .importance(Importance.HIGH)
+                .validator(RocksetConnectorConfig::validateApiServer)
                 .defaultValue("https://api.rs2.usw2.rockset.com")
                 .build()
         )
@@ -48,7 +51,8 @@ public class RocksetConnectorConfig extends AbstractConfig {
             ConfigKeyBuilder.of(ROCKSET_INTEGRATION_KEY, Type.STRING)
                 .documentation("Rockset Integration Key")
                 .importance(Importance.HIGH)
-                .defaultValue("")
+                .validator(RocksetConnectorConfig::validateIntegrationKey)
+                .defaultValue(null)
                 .build()
         )
 
@@ -64,6 +68,7 @@ public class RocksetConnectorConfig extends AbstractConfig {
             ConfigKeyBuilder.of(FORMAT, Type.STRING)
                 .documentation("Format of the data stream.")
                 .importance(Importance.HIGH)
+                .validator(RocksetConnectorConfig::validateFormat)
                 .defaultValue("json")
                 .build()
         )
@@ -72,7 +77,7 @@ public class RocksetConnectorConfig extends AbstractConfig {
             ConfigKeyBuilder.of(ROCKSET_APIKEY, Type.STRING)
                 .documentation("(Deprecated) Rockset API Key")
                 .importance(Importance.HIGH)
-                .defaultValue("")
+                .defaultValue(null)
                 .build()
         )
 
@@ -80,7 +85,7 @@ public class RocksetConnectorConfig extends AbstractConfig {
             ConfigKeyBuilder.of(ROCKSET_COLLECTION, Type.STRING)
                 .documentation("(Deprecated) Rockset collection that incoming documents will be written to.")
                 .importance(Importance.HIGH)
-                .defaultValue("")
+                .defaultValue(null)
                 .build()
         )
 
@@ -93,24 +98,41 @@ public class RocksetConnectorConfig extends AbstractConfig {
         );
   }
 
-  private void checkConfig(Map<String, String> config) throws ConnectException {
-    if (config.containsKey(ROCKSET_APISERVER_URL) &&
-        !(config.get(ROCKSET_APISERVER_URL).endsWith("rockset.com"))) {
-      throw new ConnectException(String.format("Invalid url: %s",
-          config.get(ROCKSET_APISERVER_URL)));
-    }
+  private static void validateApiServer(String key, Object value) {
+    checkNotNull(key);
+    checkArgument(key.equals(ROCKSET_APISERVER_URL));
 
-    if (config.containsKey(ROCKSET_INTEGRATION_KEY) &&
-        !(config.get(ROCKSET_INTEGRATION_KEY).startsWith("kafka"))) {
-      throw new ConnectException(String.format("Invalid integration key: %s",
-          config.get(ROCKSET_INTEGRATION_KEY)));
-    }
+    String apiserver = (String) value;
+    checkConfig(apiserver != null && apiserver.endsWith("rockset.com"),
+        invalidConfigMessage(ROCKSET_APISERVER_URL, apiserver));
+  }
 
-    if (config.containsKey(FORMAT) && !(config.get(FORMAT).equalsIgnoreCase("json")
-            || config.get(FORMAT).equalsIgnoreCase("avro"))) {
-      throw new ConnectException(String.format("Invalid format: %s, " +
-          "supported formats are avro and json", config.get(FORMAT)));
+  private static void validateIntegrationKey(String key, Object value) {
+    checkNotNull(key);
+    checkArgument(key.equals(ROCKSET_INTEGRATION_KEY));
+
+    String integrationKey = (String) value;
+    checkConfig(integrationKey == null || integrationKey.startsWith("kafka"),
+        invalidConfigMessage(ROCKSET_INTEGRATION_KEY, integrationKey));
+  }
+
+  private static void validateFormat(String key, Object value) {
+    checkNotNull(key);
+    checkArgument(key.equals(FORMAT));
+
+    String format = (String) value;
+    checkConfig(format.equalsIgnoreCase("json") || format.equalsIgnoreCase("avro"),
+        "%s. Supported formats are: ['JSON', 'AVRO']", invalidConfigMessage(FORMAT, format));
+  }
+
+  private static void checkConfig(boolean condition, String msgFormat, Object... args) {
+    if (!condition) {
+      throw new ConfigException(String.format(msgFormat, args));
     }
+  }
+
+  private static String invalidConfigMessage(String key, String value) {
+    return String.format("Invalid value \"%s\" for configuration `%s`", value, key);
   }
 
   public String getRocksetApiServerUrl() {

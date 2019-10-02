@@ -1,7 +1,6 @@
 package rockset;
 
 import org.apache.kafka.common.config.ConfigException;
-import org.apache.kafka.connect.errors.ConnectException;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
@@ -20,9 +19,7 @@ public class RocksetConnectorConfigTest {
     badFormatSettings.put("rockset.integration.key", "kafka://5");
     badFormatSettings.put("format", "abc");
 
-    assertThrows(ConnectException.class, () -> {
-      RocksetConnectorConfig rcc = new RocksetConnectorConfig(badFormatSettings);
-    });
+    assertThrows(ConfigException.class, () ->  new RocksetConnectorConfig(badFormatSettings));
   }
 
   @Test
@@ -31,9 +28,7 @@ public class RocksetConnectorConfigTest {
     badUrlSettings.put("rockset.integration.key", "kafka://5");
     badUrlSettings.put("rockset.apiserver.url", "abc.com");
 
-    assertThrows(ConnectException.class, () -> {
-      RocksetConnectorConfig rcc = new RocksetConnectorConfig(badUrlSettings);
-    });
+    assertThrows(ConfigException.class, () -> new RocksetConnectorConfig(badUrlSettings));
   }
 
   @Test
@@ -42,9 +37,7 @@ public class RocksetConnectorConfigTest {
     badTaskThreadSettings.put("rockset.integration.key", "kafka://5");
     badTaskThreadSettings.put("rockset.task.threads", "abc");
 
-    assertThrows(ConfigException.class, () -> {
-      RocksetConnectorConfig rcc = new RocksetConnectorConfig(badTaskThreadSettings);
-    });
+    assertThrows(ConfigException.class, () -> new RocksetConnectorConfig(badTaskThreadSettings));
   }
 
   @Test
@@ -53,8 +46,6 @@ public class RocksetConnectorConfigTest {
     goodSettings.put("rockset.integration.key", "kafka://5");
     goodSettings.put("format", "jSon");
 
-    assertDoesNotThrow(() -> {
-      RocksetConnectorConfig rcc = new RocksetConnectorConfig(goodSettings);
-    });
+    assertDoesNotThrow(() -> new RocksetConnectorConfig(goodSettings));
   }
 }

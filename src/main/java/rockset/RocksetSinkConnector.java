@@ -20,12 +20,8 @@ public class RocksetSinkConnector extends SinkConnector {
   @Override
   public void start(Map<String, String> settings) {
     log.info("Starting RocksetSinkConnector");
-    try {
-      configProperties = settings;
-      new RocksetConnectorConfig(settings);
-    } catch (Exception e) {
-      throw new ConnectException("Bad configuration for RocksetConnectorConfig", e);
-    }
+    configProperties = settings;
+    new RocksetConnectorConfig(settings);
   }
 
   @Override
