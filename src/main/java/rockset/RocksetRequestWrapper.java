@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class RocksetRequestWrapper implements RocksetWrapper {
-  private static Logger log = LoggerFactory.getLogger(RocksetClientWrapper.class);
+  private static Logger log = LoggerFactory.getLogger(RocksetRequestWrapper.class);
 
   private static final MediaType JSON = MediaType.parse("application/json");
 
