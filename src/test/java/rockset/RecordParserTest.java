@@ -43,7 +43,7 @@ public class RecordParserTest {
 
   // test possible non-avro types for keys
   @Test
-  public void testSimpleKeys() {
+  public void testSimpleKeys() throws IOException {
     verifySimpleKey(1);
     verifySimpleKey("key");
     verifySimpleKey(0.1);
@@ -51,7 +51,7 @@ public class RecordParserTest {
     verifySimpleKey(true);
   }
 
-  private void verifySimpleKey(Object key) {
+  private void verifySimpleKey(Object key) throws IOException {
     Schema valueSchema = SchemaBuilder.struct()
         .field("id", Schema.INT64_SCHEMA)
         .field("name", Schema.STRING_SCHEMA);
@@ -75,7 +75,7 @@ public class RecordParserTest {
 
   // test avro parsing without key
   @Test
-  public void testNoKeyAvro() {
+  public void testNoKeyAvro() throws IOException {
     Schema detailsSchema = SchemaBuilder.struct()
         .field("zip_code", Schema.INT64_SCHEMA)
         .field("city", Schema.STRING_SCHEMA);
@@ -110,7 +110,7 @@ public class RecordParserTest {
   }
 
   @Test
-  public void testAvroKey() {
+  public void testAvroKey() throws IOException {
     Schema detailsSchema = SchemaBuilder.struct()
         .field("zip_code", Schema.INT64_SCHEMA)
         .field("city", Schema.STRING_SCHEMA);
@@ -148,7 +148,7 @@ public class RecordParserTest {
       Map<String, Object> expectedKey = ImmutableMap.of(
           "id", 1234,
           "details", expectedDetails);
-      assertEquals(expectedKey, toMap(parsedKey));
+      assertEquals(expectedKey, parsedKey);
     }
 
     {
