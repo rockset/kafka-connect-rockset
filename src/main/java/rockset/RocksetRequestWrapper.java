@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import rockset.models.KafkaDocumentsRequest;
 import rockset.models.KafkaMessage;
 
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -30,10 +31,10 @@ public class RocksetRequestWrapper implements RocksetWrapper {
   private static final MediaType JSON = MediaType.parse("application/json");
 
   private static final String KAFKA_ENDPOINT = "/v1/receivers/kafka";
+  private static final ObjectMapper mapper = new ObjectMapper();
 
   private OkHttpClient client;
   private String integrationKeyEncoded;
-  private ObjectMapper mapper;
   private String apiServer;
 
   public RocksetRequestWrapper(RocksetConnectorConfig config) {
@@ -47,7 +48,6 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
     parseConnectionString(config.getRocksetIntegrationKey());
     this.apiServer = config.getRocksetApiServerUrl();
-    this.mapper = new ObjectMapper();
   }
 
   // used for testing
@@ -57,7 +57,6 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
     parseConnectionString(config.getRocksetApiServerUrl());
     this.apiServer = config.getRocksetApiServerUrl();
-    this.mapper = new ObjectMapper();
   }
 
   private void parseConnectionString(String integrationKey) {
@@ -89,14 +88,13 @@ public class RocksetRequestWrapper implements RocksetWrapper {
         messages.clear();
       }
 
-      String srId = RocksetSinkUtils.createId(record);
       try {
-        Object val = recordParser.parse(record);
-        Map<String, Object> doc = mapper.readValue(val.toString(), new TypeReference<Map<String, Object>>() {
-        });
-        doc.put("_id", srId);
+        Object key = recordParser.parseKey(record);
+        Map<String, Object> doc = toMap(recordParser.parseValue(record));
+
         KafkaMessage message = new KafkaMessage()
             .document(doc)
+            .key(key)
             .offset(record.kafkaOffset())
             .partition(record.kafkaPartition());
         messages.add(message);
@@ -145,5 +143,9 @@ public class RocksetRequestWrapper implements RocksetWrapper {
     }
 
     return true;
+  }
+
+  private static Map<String, Object> toMap(Object value) throws IOException {
+    return mapper.readValue(value.toString(), new TypeReference<Map<String, Object>>() {});
   }
 }

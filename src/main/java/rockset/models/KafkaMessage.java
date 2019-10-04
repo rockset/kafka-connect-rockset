@@ -14,6 +14,7 @@ public class KafkaMessage {
   @SerializedName("document") public Object document;
   @SerializedName("partition") public int partition;
   @SerializedName("offset") public long offset;
+  @SerializedName("key") public Object key;
 
   /*
    * Getters
@@ -43,6 +44,14 @@ public class KafkaMessage {
     return this.offset;
   }
 
+  @JsonProperty("key")
+  @ApiModelProperty(
+      required = true,
+      value = "kafka key")
+  public Object getKey() {
+    return this.key;
+  }
+
   /*
    * Setters
    */
@@ -57,6 +66,10 @@ public class KafkaMessage {
 
   public void setOffset(int offset) {
     this.offset = offset;
+  }
+
+  public void setKey(Object key) {
+    this.key = key;
   }
 
   /*
@@ -75,6 +88,11 @@ public class KafkaMessage {
 
   public KafkaMessage offset(long offset) {
     this.offset = offset;
+    return this;
+  }
+
+  public KafkaMessage key(Object key) {
+    this.key = key;
     return this;
   }
 
@@ -97,13 +115,14 @@ public class KafkaMessage {
     sb.append("    partition: ").append(this.toIndentedString(this.partition)).append("\n");
     sb.append("    offset: ").append(this.toIndentedString(this.offset)).append("\n");
     sb.append("    document: ").append(this.toIndentedString(this.document)).append("\n");
+    sb.append("    key: ").append(this.toIndentedString(this.key)).append("\n");
     sb.append("}");
     return sb.toString();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.document, this.partition, this.offset);
+    return Objects.hash(this.document, this.partition, this.offset, this.key);
   }
 
   @Override
@@ -117,6 +136,7 @@ public class KafkaMessage {
     final KafkaMessage kafkaMessage = (KafkaMessage) o;
     return this.getPartition() == kafkaMessage.getPartition()
         && this.getOffset() == kafkaMessage.getOffset()
-        && Objects.equals(this.document, kafkaMessage.document);
+        && Objects.equals(this.document, kafkaMessage.document)
+        && Objects.equals(this.key, kafkaMessage.key);
   }
 }

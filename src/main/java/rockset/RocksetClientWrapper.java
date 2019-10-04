@@ -63,13 +63,11 @@ public class RocksetClientWrapper implements RocksetWrapper {
         messages.clear();
       }
 
-      String srId = RocksetSinkUtils.createId(record);
       try {
-        Object val = recordParser.parse(record);
+        Object val = recordParser.parseValue(record);
         Map<String, Object> doc = mapper.readValue(val.toString(),
             new TypeReference<Map<String, Object>>() {
             });
-        doc.put("_id", srId);
         messages.add(doc);
       }
       catch (Exception e) {
