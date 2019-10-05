@@ -1,5 +1,10 @@
 # Rockset Kafka Connect Changelog
 
+## v1.2.0 2019-10-04
+- Connector now supports keys in messages for all types
+- `_id` for documents are now assigned on the server side. This could cause collections to have duplicate docs for a message
+- Key for a message is now part of the document, under `_meta.kafka.key`
+
 ## v1.1.0 2019-09-19
 - use new Rockset API Receiver Endpoint to send documents
 - Retry on different 5xx errors and Socket Timeout
