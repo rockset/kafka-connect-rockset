@@ -1,7 +1,6 @@
 package rockset;
 
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
@@ -12,6 +11,7 @@ import okhttp3.ResponseBody;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -59,7 +59,7 @@ public class RocksetRequestWrapperTest {
 
     RocksetRequestWrapper rrw =
         new RocksetRequestWrapper(rcc, client);
-    assertTrue(rrw.addDoc("testPut", Arrays.asList(sr), new JsonParser(), 10));
+    rrw.addDoc("testPut", Arrays.asList(sr), new JsonParser(), 10);
 
     Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
   }
@@ -77,7 +77,7 @@ public class RocksetRequestWrapperTest {
 
     RocksetRequestWrapper rrw = new RocksetRequestWrapper(rcc, client);
 
-    assertTrue(rrw.addDoc("testPut", Arrays.asList(sr), new AvroParser(), 10));
+    rrw.addDoc("testPut", Arrays.asList(sr), new AvroParser(), 10);
 
     Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
   }
@@ -92,7 +92,7 @@ public class RocksetRequestWrapperTest {
     RocksetRequestWrapper rrw =
         new RocksetRequestWrapper(rcc, client);
 
-    assertTrue(rrw.addDoc("testPut", Arrays.asList(sr1, sr2), new JsonParser(), 1));
+    rrw.addDoc("testPut", Arrays.asList(sr1, sr2), new JsonParser(), 1);
 
     Mockito.verify(client, Mockito.times(2)).newCall(Mockito.any());
   }
@@ -108,7 +108,8 @@ public class RocksetRequestWrapperTest {
     Mockito.when(client.newCall(Mockito.any()).execute())
         .thenThrow(new SocketTimeoutException());
 
-    // addDoc should return false
-    assertFalse(rrw.addDoc("testPut", Arrays.asList(sr1), new JsonParser(), 1));
+    // addDoc should throw retriable exception
+    assertThrows(RetriableException.class, () ->
+        rrw.addDoc("testPut", Arrays.asList(sr1), new JsonParser(), 1));
   }
 }

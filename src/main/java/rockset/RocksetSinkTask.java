@@ -140,27 +140,48 @@ public class RocksetSinkTask extends SinkTask {
   // TODO improve this logic
   private void addWithRetries(String topic, Collection<SinkRecord> records) {
     log.debug("Adding %s records to Rockset for topic: %s", records.size(), topic);
-    boolean success = this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
-    int retries = 0;
+
+    int retriesRemaining = RETRIES_COUNT;
     int delay = INITIAL_DELAY;
-    while (!success && retries < RETRIES_COUNT) {
-      log.debug("Retrying adding %s docs to Rockset for topic: %s", records.size(), topic);
+
+    while (true) {
       try {
-        Thread.sleep((long) (delay * (1 + JITTER_FACTOR * ThreadLocalRandom.current()
-            .nextDouble(-1, 1))));
+        this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
+        return;
+      } catch (RetriableException re) {
+        --retriesRemaining;
+
+        if (retriesRemaining > 0) {
+          // Retries are not exhausted. Sleep for sometime and retry
+          delay *= 2;
+          long sleepMs = jitter(delay);
+          logRetry(retriesRemaining, sleepMs, re);
+          sleep(sleepMs);
+          continue;
+        }
+
+        // Retries are exhausted. Cannot handle this exception here. Just propagate
+        throw re;
       }
-      catch (InterruptedException ex) {
-        Thread.currentThread().interrupt();
-      }
-      // addDoc throws ConnectException if it's not Internal Error
-      success = this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
-      retries += 1;
-      delay *= 2;
     }
-    if (!success) {
-      throw new RetriableException(String.format("Add document request timed out "
-          + " for topic: %s", topic));
+  }
+
+  private static void sleep(long sleepMs) {
+    try {
+      Thread.sleep(sleepMs);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
+  }
+
+  private static void logRetry(int retriesRemaining, long sleepMs, RetriableException re) {
+    String messageFmt = "Encountered retriable error. Retries remaining: %s. Retrying in %s ms.";
+    log.warn(String.format(messageFmt, retriesRemaining, sleepMs), re);
+  }
+
+  private static long jitter(int delay) {
+    double rnd = ThreadLocalRandom.current().nextDouble(-1, 1);
+    return (long) (delay * (1 + JITTER_FACTOR * rnd));
   }
 
   @Override

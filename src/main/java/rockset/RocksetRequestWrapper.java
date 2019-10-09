@@ -9,6 +9,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,18 +74,14 @@ public class RocksetRequestWrapper implements RocksetWrapper {
   }
 
   @Override
-  public boolean addDoc(String topic, Collection<SinkRecord> records,
-                        RecordParser recordParser, int batchSize) {
+  public void addDoc(String topic, Collection<SinkRecord> records,
+                     RecordParser recordParser, int batchSize) {
     List<KafkaMessage> messages = new LinkedList<>();
 
     for (SinkRecord record : records) {
       // if the size exceeds batchsize, send the docs
       if (messages.size() >= batchSize) {
-        // if sendDocs failed returned false
-        if (!sendDocs(topic, messages)) {
-          return false;
-        }
-
+        sendDocs(topic, messages);
         messages.clear();
       }
 
@@ -98,16 +95,15 @@ public class RocksetRequestWrapper implements RocksetWrapper {
             .offset(record.kafkaOffset())
             .partition(record.kafkaPartition());
         messages.add(message);
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         throw new ConnectException("Invalid JSON encountered in stream ", e);
       }
     }
 
-    return sendDocs(topic, messages);
+    sendDocs(topic, messages);
   }
 
-  private boolean sendDocs(String topic, List<KafkaMessage> messages) {
+  private void sendDocs(String topic, List<KafkaMessage> messages) {
     Preconditions.checkArgument(!messages.isEmpty());
     log.debug("Sending batch of %s messages for topic: %s to Rockset", messages.size(), topic);
 
@@ -125,9 +121,9 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
       try (Response response = client.newCall(request).execute()) {
         if (isInternalError(response.code())) {
-          // return false to retry
-          log.debug("Received internal error code: %s", response.code());
-          return false;
+          // internal errors are retriable
+          throw new RetriableException(String.format(
+              "Received internal error code: %s, message: %s", response.code(), response.message()));
         }
 
         if (response.code() != 200) {
@@ -136,13 +132,10 @@ public class RocksetRequestWrapper implements RocksetWrapper {
         }
       }
     } catch (SocketTimeoutException ste) {
-      log.warn("Encountered socket timeout exception. Can Retry", ste);
-      return false;
+      throw new RetriableException("Encountered socket timeout exception. Can Retry", ste);
     } catch (Exception e) {
       throw new ConnectException(e);
     }
-
-    return true;
   }
 
   private static Map<String, Object> toMap(Object value) throws IOException {

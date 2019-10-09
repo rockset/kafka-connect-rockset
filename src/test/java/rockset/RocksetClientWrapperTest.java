@@ -32,8 +32,7 @@ public class RocksetClientWrapperTest {
     SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, "{\"name\": \"johnny\"}", 0);
 
     RocksetClientWrapper rcw = new RocksetClientWrapper(rcc, Mockito.mock(RocksetClient.class));
-    Assert.assertTrue(rcw.addDoc("testPut", Arrays.asList(sr),
-        new JsonParser(), 10));
+    rcw.addDoc("testPut", Arrays.asList(sr), new JsonParser(), 10);
   }
 
   @Test
@@ -47,7 +46,6 @@ public class RocksetClientWrapperTest {
 
     RocksetClientWrapper rcw = new RocksetClientWrapper(rcc, Mockito.mock(RocksetClient.class));
 
-    Assert.assertTrue(rcw.addDoc("testPut", Arrays.asList(sr),
-        new AvroParser(), 10));
+    rcw.addDoc("testPut", Arrays.asList(sr), new AvroParser(), 10);
   }
 }

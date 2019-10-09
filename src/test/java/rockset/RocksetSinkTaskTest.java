@@ -39,8 +39,7 @@ public class RocksetSinkTaskTest {
   public void addDoc(Map settings, Collection records) {
     {
       RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
-      Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt()))
-          .thenReturn(true);
+
       ExecutorService executorService = MoreExecutors.newDirectExecutorService();
       RocksetSinkTask rst = new RocksetSinkTask();
       rst.start(settings, rc, executorService);
@@ -52,8 +51,6 @@ public class RocksetSinkTaskTest {
 
     {
       RocksetRequestWrapper rr = Mockito.mock(RocksetRequestWrapper.class);
-      Mockito.when(rr.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt()))
-          .thenReturn(true);
       ExecutorService executorService = MoreExecutors.newDirectExecutorService();
       RocksetSinkTask rst = new RocksetSinkTask();
       rst.start(settings, rr, executorService);
@@ -108,15 +105,13 @@ public class RocksetSinkTaskTest {
 
     RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
     // second put should throw RetriableException
-    Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt()))
-        .thenReturn(false);
+    Mockito.doThrow(new RetriableException("retry"))
+        .when(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
     ExecutorService executorService = MoreExecutors.newDirectExecutorService();
     RocksetSinkTask rst = new RocksetSinkTask();
     rst.start(settings, rc, executorService);
     rst.put(records);
-    assertThrows(RetriableException.class, () -> {
-      rst.put(records);
-    });
+    assertThrows(RetriableException.class, () -> rst.put(records));
   }
 
   @Test
@@ -130,16 +125,14 @@ public class RocksetSinkTaskTest {
     settings.put("rockset.collection", "j");
 
     RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
-    Mockito.when(rc.addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt()))
-        .thenReturn(false);
+    Mockito.doThrow(new RetriableException("retry"))
+        .when(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
     ExecutorService executorService = MoreExecutors.newDirectExecutorService();
     RocksetSinkTask rst = new RocksetSinkTask();
     rst.start(settings, rc, executorService);
     rst.put(records);
     Map<TopicPartition, OffsetAndMetadata> map = new HashMap();
     map.put(new TopicPartition("testRetries", 1), new OffsetAndMetadata(1L));
-    assertThrows(RetriableException.class, () -> {
-      rst.flush(map);
-    });
+    assertThrows(RetriableException.class, () -> rst.flush(map));
   }
 }
