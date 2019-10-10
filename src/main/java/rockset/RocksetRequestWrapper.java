@@ -105,7 +105,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
   private void sendDocs(String topic, List<KafkaMessage> messages) {
     Preconditions.checkArgument(!messages.isEmpty());
-    log.debug("Sending batch of %s messages for topic: %s to Rockset", messages.size(), topic);
+    log.debug("Sending batch of {} messages for topic: {} to Rockset", messages.size(), topic);
 
     KafkaDocumentsRequest documentsRequest = new KafkaDocumentsRequest()
         .kafkaMessages(messages)

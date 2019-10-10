@@ -139,7 +139,7 @@ public class RocksetSinkTask extends SinkTask {
 
   // TODO improve this logic
   private void addWithRetries(String topic, Collection<SinkRecord> records) {
-    log.debug("Adding %s records to Rockset for topic: %s", records.size(), topic);
+    log.debug("Adding {} records to Rockset for topic: {}", records.size(), topic);
 
     int retriesRemaining = RETRIES_COUNT;
     int delay = INITIAL_DELAY;
@@ -186,10 +186,11 @@ public class RocksetSinkTask extends SinkTask {
 
   @Override
   public void flush(Map<TopicPartition, OffsetAndMetadata> map) {
-    for (Map.Entry<TopicPartition, OffsetAndMetadata> toe : map.entrySet()) {
-      log.debug("Flusing for topic: %s, partition: %s", toe.getKey(), toe.getValue());
-      checkForFailures(toe.getKey(), true);
-    }
+    map.forEach((toppar, offsetAndMetadata) -> {
+      log.debug("Flushing for topic: {}, partition: {}, offset: {}, metadata: {}",
+          toppar.topic(), toppar.partition(), offsetAndMetadata.offset(), offsetAndMetadata.metadata());
+      checkForFailures(toppar, true);
+    });
   }
 
   @Override
