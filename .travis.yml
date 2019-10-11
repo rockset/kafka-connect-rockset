@@ -3,3 +3,7 @@ jdk:
     - openjdk8
 script:
     - mvn package
+notifications:
+  slack:
+    rooms:
+      - secure: "AHmYSV2aRdUAs9m5SVHJK+oFW5EPtcaiLzyYbR/aibb+flYq1+yOMs5dH1ORrI9FOMylSeCODIrILj7WuCo9m23p0fQ1gMFZ2ESOwZ+54ujahI8VOAEFCf5X//eTg4gkOpyUk/O7539inHFYzYn2FJzdaOH/Rnv6+QU0kodGmTutfScLW+PfI0hgmlocEiAkS7ZoDaORRU9CY/73Wzh+ejFuCG+4xnlUvejOIBzDF3upvr6Nv3N/CnEmESo3Jw4e4OqVG5gVF5omW2j61JZnd9Zur2mhPZR9bpaC6LWzgQibbi8AUTF+lKdNCEaksA2abnGGYBPvvHXgJVP1m1H9FP4y0yBeVYV0iZmgm+TKBWwdSEoFGO4Fg6PbWVK+5EO+fj5tpDFKqPgVYRGDfk8l/YTS7J96FrfQ41o289Im5F7pewCg9OhPmpYlpbfLOphP/EtNjtmIkI2LS83e8oAFQBd5u4/xR/tZN4cxsMFZQoPOf39u8HuacVggOWPqyP+WwthMpzAe9bdepE5nAFh5yq9XTnm9BAHbZyK0RM0wGKrad/QZ25p7wx0Kdovi+pcw8Pwas+BPp0FKdt8uLKAS6kLgBW3JBq8NaCi3vGnaktNiTaAhR68P6Q+e+gYS+osteCc+TVGdCgT4+PsEI21jWH83jwn9zwGWqbWs5fCp+mQ="
