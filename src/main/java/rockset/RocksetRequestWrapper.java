@@ -70,7 +70,11 @@ public class RocksetRequestWrapper implements RocksetWrapper {
   }
 
   private boolean isInternalError(int code) {
-    return code == 500 || code == 502 || code == 503 || code == 504;
+    return code == 500  // INTERNALERROR
+        || code == 502
+        || code == 503  // NOT_READY
+        || code == 504
+        || code == 429; // RESOURCEEXCEEDED
   }
 
   @Override

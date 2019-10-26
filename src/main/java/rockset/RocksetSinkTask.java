@@ -94,7 +94,6 @@ public class RocksetSinkTask extends SinkTask {
   private void submitForProcessing(Collection<SinkRecord> records) {
     partitionRecordsByTopic(records).forEach((toppar, recordBatch) -> {
       try {
-        checkForFailures(toppar, false);
         futureMap.computeIfAbsent(toppar, k -> new ArrayList<>())
             .add(executorService.submit(() -> addWithRetries(toppar.topic(), recordBatch)));
       } catch (InterruptedException e) {
@@ -107,7 +106,7 @@ public class RocksetSinkTask extends SinkTask {
    return (e.getCause() != null && e.getCause() instanceof RetriableException);
   }
 
-  private void checkForFailures(TopicPartition tp, boolean wait) {
+  private void checkForFailures(TopicPartition tp) {
     if (futureMap.get(tp) == null) {
       return;
     }
@@ -116,23 +115,20 @@ public class RocksetSinkTask extends SinkTask {
     Iterator<Future> futureIterator = futures.iterator();
     while (futureIterator.hasNext()) {
       Future future = futureIterator.next();
-      // this is blocking only if wait is true
-      if (wait || future.isDone()) {
-        try {
-          future.get();
-        } catch (Exception e) {
-          if (isRetriableException(e)) {
-            throw new RetriableException(
-                String.format("Unable to write document for topic: %s, partition: %s, in Rockset,"
-                    + " should retry, cause: %s", tp.topic(), tp.partition(), e.getMessage()), e);
-          }
-
-          throw new RuntimeException(
+      try {
+        future.get();
+      } catch (Exception e) {
+        if (isRetriableException(e)) {
+          throw new RetriableException(
               String.format("Unable to write document for topic: %s, partition: %s, in Rockset,"
-                  + " cause: %s", tp.topic(), tp.partition(), e.getMessage()), e);
-        } finally {
-          futureIterator.remove();
+                  + " should retry, cause: %s", tp.topic(), tp.partition(), e.getMessage()), e);
         }
+
+        throw new RuntimeException(
+            String.format("Unable to write document for topic: %s, partition: %s, in Rockset,"
+                + " cause: %s", tp.topic(), tp.partition(), e.getMessage()), e);
+      } finally {
+        futureIterator.remove();
       }
     }
   }
@@ -189,14 +185,16 @@ public class RocksetSinkTask extends SinkTask {
     map.forEach((toppar, offsetAndMetadata) -> {
       log.debug("Flushing for topic: {}, partition: {}, offset: {}, metadata: {}",
           toppar.topic(), toppar.partition(), offsetAndMetadata.offset(), offsetAndMetadata.metadata());
-      checkForFailures(toppar, true);
+      checkForFailures(toppar);
     });
   }
 
   @Override
   public void stop() {
     log.info("Stopping Rockset Kafka Connect Plugin, waiting for active tasks to complete");
-    executorService.shutdown();
+    if (executorService != null) {
+      executorService.shutdownNow();
+    }
     log.info("Stopped Rockset Kafka Connect Plugin");
   }
 

@@ -34,4 +34,11 @@ public class BlockingExecutor {
   public void shutdown() {
     executorService.shutdown();
   }
+
+  //
+  // Force shutdown
+  //
+  public void shutdownNow() {
+    executorService.shutdownNow();
+  }
 }

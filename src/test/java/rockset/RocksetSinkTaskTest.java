@@ -93,9 +93,15 @@ public class RocksetSinkTaskTest {
     addDoc(settings, records);
   }
 
+  /**
+   * Verify that puts do not throw exception, but a suceeding flush does
+   */
   @Test
   public void testRetriesPut() {
-    SinkRecord sr = new SinkRecord("testRetries", 1, null, "key", null, "{\"name\":\"johnny\"}", 0);
+    String topic = "testRetries";
+    int partition = 1;
+    SinkRecord sr = new SinkRecord(topic, partition, null, "key", null,
+                                   "{\"name\":\"johnny\"}", 0);
     Collection records = new ArrayList();
     records.add(sr);
 
@@ -103,15 +109,27 @@ public class RocksetSinkTaskTest {
     settings.put("rockset.apikey", "5");
     settings.put("rockset.collection", "j");
 
-    RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
-    // second put should throw RetriableException
-    Mockito.doThrow(new RetriableException("retry"))
-        .when(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
+    RocksetRequestWrapper rc = Mockito.mock(RocksetRequestWrapper.class);
     ExecutorService executorService = MoreExecutors.newDirectExecutorService();
     RocksetSinkTask rst = new RocksetSinkTask();
     rst.start(settings, rc, executorService);
+
+    // Do a put that simulates throwing Retryable exception from apiserver
+    // The put does not throw, but rather the succeeding flush throws the exception.
+    Mockito.doThrow(new RetriableException("retry"))
+        .when(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
     rst.put(records);
-    assertThrows(RetriableException.class, () -> rst.put(records));
+
+    Map<TopicPartition, OffsetAndMetadata> fmap = new HashMap<>();
+    fmap.put(new TopicPartition(topic, partition), new OffsetAndMetadata(0));
+    assertThrows(RetriableException.class, () -> rst.flush(fmap));
+
+    // The previous flush has thrown an exception and the exception is cleared.
+    // New puts should be successful.
+    Mockito.doNothing()
+        .when(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
+    rst.put(records);
+    rst.flush(fmap);
   }
 
   @Test
