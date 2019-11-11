@@ -127,7 +127,8 @@ public class RocksetRequestWrapper implements RocksetWrapper {
         if (isInternalError(response.code())) {
           // internal errors are retriable
           throw new RetriableException(String.format(
-              "Received internal error code: %s, message: %s", response.code(), response.message()));
+              "Received internal error code: %s, message: %s. Can Retry.",
+              response.code(), response.message()));
         }
 
         if (response.code() != 200) {
@@ -137,6 +138,8 @@ public class RocksetRequestWrapper implements RocksetWrapper {
       }
     } catch (SocketTimeoutException ste) {
       throw new RetriableException("Encountered socket timeout exception. Can Retry", ste);
+    } catch (RetriableException e) {
+      throw e;
     } catch (Exception e) {
       throw new ConnectException(e);
     }
