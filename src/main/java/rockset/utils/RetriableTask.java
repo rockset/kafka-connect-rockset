@@ -12,9 +12,12 @@ import java.util.concurrent.ThreadLocalRandom;
 
 //
 // RetriableTask encapsulates a runnable expression. If the runnable fails
-// due to a retriable exception, the run method schedules it to be run after
-// a short delay. If all the retries expire, run method sets the execution exception
-// and fails
+// due to a retriable exception, the run method submits it to another thread pool
+// to submit it to task thread pool to run after some time.
+// If all the retries expire, run method sets the execution exception
+// and fails.
+// If the the retry queue is full, it will reject the task (retries are best effort)
+//
 
 public class RetriableTask extends FutureTask<Void> {
   private static Logger log = LoggerFactory.getLogger(RetriableTask.class);
