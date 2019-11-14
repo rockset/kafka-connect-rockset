@@ -1,10 +1,8 @@
 package rockset.utils;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Use BlockingExecutor to block threads submitting tasks,
@@ -13,9 +11,9 @@ import java.util.concurrent.TimeUnit;
 public class BlockingExecutor {
 
   private final Semaphore semaphore;
-  private final ScheduledExecutorService executorService;
+  private final ExecutorService executorService;
 
-  public BlockingExecutor(int numThreads, ScheduledExecutorService executorService) {
+  public BlockingExecutor(int numThreads, ExecutorService executorService) {
     this.semaphore = new Semaphore(numThreads);
     this.executorService = executorService;
   }
@@ -31,10 +29,6 @@ public class BlockingExecutor {
         semaphore.release();
       }
     });
-  }
-
-  public void schedule(FutureTask<Void> task, long delay, TimeUnit timeUnit) {
-    executorService.schedule(task, delay, timeUnit);
   }
 
   public void shutdown() {

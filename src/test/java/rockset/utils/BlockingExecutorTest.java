@@ -1,6 +1,7 @@
 package rockset.utils;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -8,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,14 +21,15 @@ public class BlockingExecutorTest {
   public void testBlockingExecutor() throws Exception {
     log.info("Running testBlockingExecutor");
 
-    BlockingExecutor executor = new BlockingExecutor(2, Executors.newScheduledThreadPool(2));
+    BlockingExecutor executor = new BlockingExecutor(2, Executors.newFixedThreadPool(2));
+    ExecutorService retryExecutorService = Mockito.mock(ExecutorService.class);
 
     CountDownLatch start1 = new CountDownLatch(1);
     CountDownLatch start2 = new CountDownLatch(1);
 
     // Both should go through
-    Future f1 = executor.submit(new RetriableTask(executor, () -> wait(start1)));
-    Future f2 = executor.submit(new RetriableTask(executor, () -> wait(start2)));
+    Future f1 = executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(start1)));
+    Future f2 = executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(start2)));
 
 
     // finish and wait for second task
@@ -35,7 +38,7 @@ public class BlockingExecutorTest {
 
     // add another task
     CountDownLatch start3 = new CountDownLatch(1);
-    Future f3 = executor.submit(new RetriableTask(executor, () -> wait(start3)));
+    Future f3 = executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(start3)));
 
     // finish and wait for third task
     start3.countDown();
@@ -51,16 +54,17 @@ public class BlockingExecutorTest {
   @Test
   public void testBlockingExecutorBlocksWhenFull() throws Exception {
     log.info("Running testBlockingExecutorBlocksWhenFull");
-    BlockingExecutor executor = new BlockingExecutor(1, Executors.newScheduledThreadPool(1));
+    BlockingExecutor executor = new BlockingExecutor(1, Executors.newFixedThreadPool(1));
+    ExecutorService retryExecutorService = Mockito.mock(ExecutorService.class);
 
     CountDownLatch waitLatch = new CountDownLatch(1);
-    executor.submit(new RetriableTask(executor, () -> wait(waitLatch)));
+    executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(waitLatch)));
 
     // submitting a new job from a different thread should block the new thread
     CountDownLatch doneLatch = new CountDownLatch(1);
     Future secondTaskSubmission = Executors.newFixedThreadPool(1).submit(() -> {
       try {
-        executor.submit(new RetriableTask(executor, doneLatch::countDown));
+        executor.submit(new RetriableTask(executor, retryExecutorService, doneLatch::countDown));
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }

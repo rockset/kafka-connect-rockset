@@ -16,9 +16,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 import rockset.utils.RetriableTask;
@@ -26,7 +29,18 @@ import rockset.utils.RetriableTask;
 public class RocksetSinkTask extends SinkTask {
   private static Logger log = LoggerFactory.getLogger(RocksetSinkTask.class);
   private RocksetWrapper rw;
-  private BlockingExecutor executorService;
+
+  // taskExecutorService is responsible to run the task of sending data
+  // to Rockset. If the task fails, it submits it to retryExecutorService
+  // to be submitted back to taskExecutorService after a delay.
+  private BlockingExecutor taskExecutorService;
+
+  // retryExecutorService scheduled tasks to be retried after a delay and
+  // submits it to taskExecutorService. If the retryExecutorService is full
+  // it will fail the task immediately (retrying is best effort)
+  // make sure this has more threads than the task executor always
+  private ExecutorService retryExecutorService;
+
   private Map<TopicPartition, List<RetriableTask>> futureMap;
   private RocksetConnectorConfig config;
   private RecordParser recordParser;
@@ -50,17 +64,25 @@ public class RocksetSinkTask extends SinkTask {
     this.rw = RocksetClientFactory.getRocksetWrapper(config);
 
     int numThreads = this.config.getRocksetTaskThreads();
-    this.executorService = new BlockingExecutor(numThreads,
-        Executors.newScheduledThreadPool(numThreads));
+    this.taskExecutorService = new BlockingExecutor(numThreads,
+        Executors.newFixedThreadPool(numThreads));
+
+    this.retryExecutorService = new ThreadPoolExecutor(
+        numThreads * 2, numThreads * 2,
+        1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(numThreads * 10));
+
     this.futureMap = new HashMap<>();
     this.recordParser = getRecordParser(config.getFormat());
   }
 
   public void start(Map<String, String> settings, RocksetWrapper rw,
-                    ScheduledExecutorService executorService) {
+                    ExecutorService executorService,
+                    ExecutorService retryExecutorService) {
     this.config = new RocksetConnectorConfig(settings);
     this.rw = rw;
-    this.executorService = new BlockingExecutor(config.getRocksetTaskThreads(), executorService);
+    this.taskExecutorService = new BlockingExecutor(config.getRocksetTaskThreads(),
+        executorService);
+    this.retryExecutorService = retryExecutorService;
     this.futureMap = new HashMap<>();
     this.recordParser = getRecordParser(config.getFormat());
     log.info("Starting Rockset Kafka Connect Plugin");
@@ -90,11 +112,11 @@ public class RocksetSinkTask extends SinkTask {
   private void submitForProcessing(Collection<SinkRecord> records) {
     partitionRecordsByTopic(records).forEach((toppar, recordBatch) -> {
       try {
-        RetriableTask task = new RetriableTask(executorService,
+        RetriableTask task = new RetriableTask(taskExecutorService, retryExecutorService,
             () -> submitTask(toppar.topic(), recordBatch));
 
         // this should only block if all the threads are busy
-        executorService.submit(task);
+        taskExecutorService.submit(task);
 
         futureMap.computeIfAbsent(toppar, k -> new ArrayList<>()).add(task);
       } catch (InterruptedException e) {
@@ -151,8 +173,8 @@ public class RocksetSinkTask extends SinkTask {
   @Override
   public void stop() {
     log.info("Stopping Rockset Kafka Connect Plugin, waiting for active tasks to complete");
-    if (executorService != null) {
-      executorService.shutdownNow();
+    if (taskExecutorService != null) {
+      taskExecutorService.shutdownNow();
     }
     log.info("Stopped Rockset Kafka Connect Plugin");
   }

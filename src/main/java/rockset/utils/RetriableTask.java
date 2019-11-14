@@ -1,12 +1,14 @@
 package rockset.utils;
 
+import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 //
 // RetriableTask encapsulates a runnable expression. If the runnable fails
@@ -22,19 +24,44 @@ public class RetriableTask extends FutureTask<Void> {
   private static final double JITTER_FACTOR = 0.2;
 
   private final Runnable runnable;
-  private final BlockingExecutor executorService;
+  private final BlockingExecutor taskExecutorService;
+  private final ExecutorService retryExecutorService;
 
   private int numRetries = 0;
   private int delay = INITIAL_DELAY;
 
-  public RetriableTask(BlockingExecutor executorService, Runnable runnable) {
+  public RetriableTask(
+      BlockingExecutor taskExecutorService,
+      ExecutorService retryExecutorService,
+      Runnable runnable) {
+
     super(runnable, null);
+    this.taskExecutorService = taskExecutorService;
+    this.retryExecutorService = retryExecutorService;
     this.runnable = runnable;
-    this.executorService = executorService;
   }
 
-  private void retry(long jitterDelay) {
-    executorService.schedule(this, jitterDelay, TimeUnit.MILLISECONDS);
+  private void retry(Throwable retryException) {
+    delay *= 2;
+    long jitterDelay = jitter(delay);
+    log.info(String.format("Encountered retriable error. Retry count: %s. Retrying in %s ms.",
+        numRetries, jitterDelay), retryException);
+
+    Runnable runnable = () -> {
+      try {
+        Thread.sleep(jitterDelay);
+        taskExecutorService.submit(this);
+      } catch (InterruptedException e) {
+        throw new ConnectException("Failed to put records", e);
+      }
+    };
+
+    try {
+      retryExecutorService.submit(runnable);
+    } catch (RejectedExecutionException e) {
+      setException(e);
+      return;
+    }
   }
 
   private static long jitter(int delay) {
@@ -63,12 +90,7 @@ public class RetriableTask extends FutureTask<Void> {
         return;
       }
 
-      // schedule
-      delay *= 2;
-      long jitterDelay = jitter(delay);
-      log.info(String.format("Encountered retriable error. Retry count: %s. Retrying in %s ms.",
-          numRetries, jitterDelay), e);
-      retry(jitterDelay);
+      retry(e);
     }
   }
 }

@@ -1,5 +1,6 @@
 package rockset;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.data.Schema;
@@ -18,8 +19,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class RocksetSinkTaskTest {
   private static final Logger log = LoggerFactory.getLogger(RocksetSinkTaskTest.class);
@@ -27,10 +28,12 @@ public class RocksetSinkTaskTest {
   private void addDoc(String topic, Map settings, Collection records) {
     {
       RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
-      ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
+      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
 
       RocksetSinkTask rst = new RocksetSinkTask();
-      rst.start(settings, rc, executorService);
+      ExecutorService retryExecutorService = MoreExecutors.newDirectExecutorService();
+      rst.start(settings, rc, executorService, retryExecutorService);
 
       rst.put(records);
 
@@ -43,10 +46,11 @@ public class RocksetSinkTaskTest {
 
     {
       RocksetRequestWrapper rr = Mockito.mock(RocksetRequestWrapper.class);
-      ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+      ExecutorService retryExecutorService = MoreExecutors.newDirectExecutorService();
 
       RocksetSinkTask rst = new RocksetSinkTask();
-      rst.start(settings, rr, executorService);
+      rst.start(settings, rr, executorService, retryExecutorService);
 
       rst.put(records);
 
@@ -108,9 +112,11 @@ public class RocksetSinkTaskTest {
     settings.put("rockset.collection", "j");
 
     RocksetRequestWrapper rc = Mockito.mock(RocksetRequestWrapper.class);
-    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+    ExecutorService retryExecutorService = Executors.newFixedThreadPool(2);
+
     RocksetSinkTask rst = new RocksetSinkTask();
-    rst.start(settings, rc, executorService);
+    rst.start(settings, rc, executorService, retryExecutorService);
 
     // Do a put that simulates throwing Retryable exception from apiserver
     // The put does not throw, but rather the succeeding flush throws the exception.
@@ -143,10 +149,14 @@ public class RocksetSinkTaskTest {
     RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
     Mockito.doThrow(new RetriableException("retry"))
         .when(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
-    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
+    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+    ExecutorService retryExecutorService = Executors.newFixedThreadPool(2);
+
     RocksetSinkTask rst = new RocksetSinkTask();
-    rst.start(settings, rc, executorService);
+    rst.start(settings, rc, executorService, retryExecutorService);
     rst.put(records);
+
     Map<TopicPartition, OffsetAndMetadata> map = new HashMap();
     map.put(new TopicPartition("testRetries", 1), new OffsetAndMetadata(1L));
     assertThrows(RetriableException.class, () -> rst.flush(map));
