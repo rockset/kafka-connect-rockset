@@ -44,11 +44,6 @@ public class RetriableTask extends FutureTask<Void> {
     this.runnable = runnable;
   }
 
-  private static long jitter(int delay) {
-    double rnd = ThreadLocalRandom.current().nextDouble(-1, 1);
-    return (long) (delay * (1 + JITTER_FACTOR * rnd));
-  }
-
   private void retry(Throwable retryException) {
     delay *= 2;
     long jitterDelay = jitter(delay);
@@ -67,9 +62,14 @@ public class RetriableTask extends FutureTask<Void> {
     try {
       retryExecutorService.submit(runnable);
     } catch (RejectedExecutionException e) {
-      setException(retryException);
+      setException(e);
       return;
     }
+  }
+
+  private static long jitter(int delay) {
+    double rnd = ThreadLocalRandom.current().nextDouble(-1, 1);
+    return (long) (delay * (1 + JITTER_FACTOR * rnd));
   }
 
   @Override
