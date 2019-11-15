@@ -114,7 +114,7 @@ public class RocksetSinkTask extends SinkTask {
     partitionRecordsByTopic(records).forEach((toppar, recordBatch) -> {
       try {
         RetriableTask task = new RetriableTask(taskExecutorService, retryExecutorService,
-            () -> submitTask(toppar.topic(), recordBatch));
+            () -> addDocs(toppar.topic(), recordBatch));
 
         // this should only block if all the threads are busy
         taskExecutorService.submit(task);
@@ -157,7 +157,7 @@ public class RocksetSinkTask extends SinkTask {
     }
   }
 
-  private void submitTask(String topic, Collection<SinkRecord> records) {
+  private void addDocs(String topic, Collection<SinkRecord> records) {
     log.debug("Adding {} records to Rockset for topic: {}", records.size(), topic);
     this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
   }
