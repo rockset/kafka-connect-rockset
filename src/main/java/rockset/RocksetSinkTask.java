@@ -38,7 +38,8 @@ public class RocksetSinkTask extends SinkTask {
   // retryExecutorService scheduled tasks to be retried after a delay and
   // submits it to taskExecutorService. If the retryExecutorService is full
   // it will fail the task immediately (retrying is best effort)
-  // make sure this has more threads than the task executor always
+  // make sure this has more threads than the task executor thread pool always
+  // otherwise
   private ExecutorService retryExecutorService;
 
   private Map<TopicPartition, List<RetriableTask>> futureMap;
