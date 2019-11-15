@@ -19,22 +19,34 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
+import rockset.utils.RetriableTask;
 
 public class RocksetSinkTask extends SinkTask {
   private static Logger log = LoggerFactory.getLogger(RocksetSinkTask.class);
   private RocksetWrapper rw;
-  private BlockingExecutor executorService;
-  private Map<TopicPartition, List<Future>> futureMap;
+
+  // taskExecutorService is responsible to run the task of sending data
+  // to Rockset. If the task fails, it submits it to retryExecutorService
+  // to be submitted back to taskExecutorService after a delay.
+  private BlockingExecutor taskExecutorService;
+
+  // retryExecutorService scheduled tasks to be retried after a delay and
+  // submits it to taskExecutorService. If the retryExecutorService is full
+  // it will fail the task immediately (retrying is best effort).
+  // Make sure this has more threads than the task executor thread pool always
+  // otherwise it can lead to deadlock.
+  private ExecutorService retryExecutorService;
+
+  private Map<TopicPartition, List<RetriableTask>> futureMap;
   private RocksetConnectorConfig config;
   private RecordParser recordParser;
 
-  public static final int BATCH_SIZE = 1000;
-  public static final int RETRIES_COUNT = 5;
-  public static final int INITIAL_DELAY = 250;
-  public static final double JITTER_FACTOR = 0.2;
+  private static final int BATCH_SIZE = 1000;
 
   private RecordParser getRecordParser(String format) {
     switch (format.toLowerCase()) {
@@ -53,18 +65,25 @@ public class RocksetSinkTask extends SinkTask {
     this.rw = RocksetClientFactory.getRocksetWrapper(config);
 
     int numThreads = this.config.getRocksetTaskThreads();
-    this.executorService = new BlockingExecutor(numThreads,
+    this.taskExecutorService = new BlockingExecutor(numThreads,
         Executors.newFixedThreadPool(numThreads));
+
+    this.retryExecutorService = new ThreadPoolExecutor(
+        numThreads * 2, numThreads * 2,
+        1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(numThreads * 10));
+
     this.futureMap = new HashMap<>();
     this.recordParser = getRecordParser(config.getFormat());
-
   }
 
   public void start(Map<String, String> settings, RocksetWrapper rw,
-                    ExecutorService executorService) {
+                    ExecutorService executorService,
+                    ExecutorService retryExecutorService) {
     this.config = new RocksetConnectorConfig(settings);
     this.rw = rw;
-    this.executorService = new BlockingExecutor(config.getRocksetTaskThreads(), executorService);
+    this.taskExecutorService = new BlockingExecutor(config.getRocksetTaskThreads(),
+        executorService);
+    this.retryExecutorService = retryExecutorService;
     this.futureMap = new HashMap<>();
     this.recordParser = getRecordParser(config.getFormat());
     log.info("Starting Rockset Kafka Connect Plugin");
@@ -94,8 +113,13 @@ public class RocksetSinkTask extends SinkTask {
   private void submitForProcessing(Collection<SinkRecord> records) {
     partitionRecordsByTopic(records).forEach((toppar, recordBatch) -> {
       try {
-        futureMap.computeIfAbsent(toppar, k -> new ArrayList<>())
-            .add(executorService.submit(() -> addWithRetries(toppar.topic(), recordBatch)));
+        RetriableTask task = new RetriableTask(taskExecutorService, retryExecutorService,
+            () -> addDocs(toppar.topic(), recordBatch));
+
+        // this should only block if all the threads are busy
+        taskExecutorService.submit(task);
+
+        futureMap.computeIfAbsent(toppar, k -> new ArrayList<>()).add(task);
       } catch (InterruptedException e) {
         throw new ConnectException("Failed to put records", e);
       }
@@ -111,8 +135,8 @@ public class RocksetSinkTask extends SinkTask {
       return;
     }
 
-    List<Future> futures = futureMap.get(tp);
-    Iterator<Future> futureIterator = futures.iterator();
+    List<RetriableTask> futures = futureMap.get(tp);
+    Iterator<RetriableTask> futureIterator = futures.iterator();
     while (futureIterator.hasNext()) {
       Future future = futureIterator.next();
       try {
@@ -133,51 +157,9 @@ public class RocksetSinkTask extends SinkTask {
     }
   }
 
-  // TODO improve this logic
-  private void addWithRetries(String topic, Collection<SinkRecord> records) {
+  private void addDocs(String topic, Collection<SinkRecord> records) {
     log.debug("Adding {} records to Rockset for topic: {}", records.size(), topic);
-
-    int retriesRemaining = RETRIES_COUNT;
-    int delay = INITIAL_DELAY;
-
-    while (true) {
-      try {
-        this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
-        return;
-      } catch (RetriableException re) {
-        --retriesRemaining;
-
-        if (retriesRemaining > 0) {
-          // Retries are not exhausted. Sleep for sometime and retry
-          delay *= 2;
-          long sleepMs = jitter(delay);
-          logRetry(retriesRemaining, sleepMs, re);
-          sleep(sleepMs);
-          continue;
-        }
-
-        // Retries are exhausted. Cannot handle this exception here. Just propagate
-        throw re;
-      }
-    }
-  }
-
-  private static void sleep(long sleepMs) {
-    try {
-      Thread.sleep(sleepMs);
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private static void logRetry(int retriesRemaining, long sleepMs, RetriableException re) {
-    String messageFmt = "Encountered retriable error. Retries remaining: %s. Retrying in %s ms.";
-    log.warn(String.format(messageFmt, retriesRemaining, sleepMs), re);
-  }
-
-  private static long jitter(int delay) {
-    double rnd = ThreadLocalRandom.current().nextDouble(-1, 1);
-    return (long) (delay * (1 + JITTER_FACTOR * rnd));
+    this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
   }
 
   @Override
@@ -192,8 +174,8 @@ public class RocksetSinkTask extends SinkTask {
   @Override
   public void stop() {
     log.info("Stopping Rockset Kafka Connect Plugin, waiting for active tasks to complete");
-    if (executorService != null) {
-      executorService.shutdownNow();
+    if (taskExecutorService != null) {
+      taskExecutorService.shutdownNow();
     }
     log.info("Stopped Rockset Kafka Connect Plugin");
   }

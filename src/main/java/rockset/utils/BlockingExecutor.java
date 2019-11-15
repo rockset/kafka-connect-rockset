@@ -20,11 +20,11 @@ public class BlockingExecutor {
 
   // returns immediately if a thread is available to run the task,
   // else blocks until one of the active tasks completes
-  public Future<?> submit(Runnable runnable) throws InterruptedException {
+  public Future<?> submit(RetriableTask task) throws InterruptedException {
     semaphore.acquire();
     return executorService.submit(() -> {
       try {
-        runnable.run();
+        task.run();
       } finally {
         semaphore.release();
       }
