@@ -1,6 +1,8 @@
 
 # Kafka Connect for Rockset
 
+[![Build Status](https://github.com/rockset/kafka-connect-rockset/workflows/Java%20CI/badge.svg)](https://github.com/rockset/kafka-connect-rockset/actions)
+
 Kafka Connect for [Rockset](https://rockset.com/) is a [Kafka Connect Sink](https://docs.confluent.io/current/connect/index.html). This connector helps you load your data from Kafka Streams into Rockset collections and runs in both standalone and distributed mode. **Only valid JSON and Avro documents can be read from Kafka Streams and written to Rockset collections by Kafka Connect for Rockset.**
 
 ## API Version
