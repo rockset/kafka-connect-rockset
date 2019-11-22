@@ -1,5 +1,9 @@
 # Rockset Kafka Connect Changelog
 
+## v1.2.1 2019-11-22
+- Don't throw errors from put. Only flush call handles failures.
+- Do not block all threads during retries.
+
 ## v1.2.0 2019-10-04
 - Connector now supports keys in messages for all types
 - `_id` for documents are now assigned on the server side. This could cause collections to have duplicate docs for a message
