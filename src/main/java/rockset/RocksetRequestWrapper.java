@@ -91,7 +91,7 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
       try {
         Object key = recordParser.parseKey(record);
-        Map<String, Object> doc = toMap(recordParser.parseValue(record));
+        Map<String, Object> doc = recordParser.parseValue(record);
 
         KafkaMessage message = new KafkaMessage()
             .document(doc)
@@ -143,9 +143,5 @@ public class RocksetRequestWrapper implements RocksetWrapper {
     } catch (Exception e) {
       throw new ConnectException(e);
     }
-  }
-
-  private static Map<String, Object> toMap(Object value) throws IOException {
-    return mapper.readValue(value.toString(), new TypeReference<Map<String, Object>>() {});
   }
 }

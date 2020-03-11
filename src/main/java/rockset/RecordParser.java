@@ -3,17 +3,17 @@ package rockset;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.confluent.connect.avro.AvroData;
-import io.confluent.kafka.serializers.NonRecordContainer;
 
 import java.io.IOException;
 import java.util.Map;
+
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 
 
 public interface RecordParser {
 
-  Object parseValue(SinkRecord record);
+  Map<String, Object> parseValue(SinkRecord record);
 
   /**
    * Parse key from a sink record.
@@ -35,22 +35,20 @@ public interface RecordParser {
   }
 }
 
-class AvroParser implements RecordParser {
-  @Override
-  public Object parseValue(SinkRecord record) {
-    AvroData avroData = new AvroData(1); // arg is  cacheSize
-    Object val = avroData.fromConnectData(record.valueSchema(), record.value());
-    if (val instanceof NonRecordContainer) {
-      val = ((NonRecordContainer) val).getValue();
-    }
-
-    return val;
-  }
-}
-
 class JsonParser implements RecordParser {
+  private static final ObjectMapper mapper = new ObjectMapper();
+
   @Override
-  public Object parseValue(SinkRecord record) {
-    return record.value();
+  public Map<String, Object> parseValue(SinkRecord record) {
+    return toMap(record.value());
+  }
+
+  private static Map<String, Object> toMap(Object value) {
+    try {
+      return mapper.readValue(value.toString(), new TypeReference<Map<String, Object>>() {
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

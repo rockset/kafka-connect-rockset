@@ -1,6 +1,5 @@
 package rockset;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rockset.client.ApiException;
 import com.rockset.client.RocksetClient;
@@ -59,10 +58,7 @@ public class RocksetClientWrapper implements RocksetWrapper {
       }
 
       try {
-        Object val = recordParser.parseValue(record);
-        Map<String, Object> doc = mapper.readValue(val.toString(),
-            new TypeReference<Map<String, Object>>() {
-            });
+        Map<String, Object> doc = recordParser.parseValue(record);
         messages.add(doc);
       }
       catch (Exception e) {
