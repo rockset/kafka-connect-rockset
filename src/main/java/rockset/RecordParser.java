@@ -62,7 +62,7 @@ class JsonParser implements RecordParser {
 
       // Could not deserialize to as map and list. Throw
       String name = record.value() == null ? "null" : record.value().getClass().getName();
-      String message = String.format("Cannot deserialize the record of type %s as as Map or List", name);
+      String message = String.format("Cannot deserialize the record of type %s as Map or List", name);
       log.warn(message, cause);
       throw new RuntimeException(message, e);
     }
