@@ -1,5 +1,8 @@
 # Rockset Kafka Connect Changelog
 
+## v1.3.0 2020-11-05
+- Support list type messages
+
 ## v1.2.1 2019-11-22
 - Don't throw errors from put. Only flush call handles failures.
 - Do not block all threads during retries.
