@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import io.confluent.connect.avro.AvroData;
 import io.confluent.kafka.serializers.NonRecordContainer;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,6 +35,10 @@ class AvroParser implements RecordParser {
 
   @Override
   public Map<String, Object> parseValue(SinkRecord record) {
+    // If there is no value then return an empty map
+    if (record.value() == null) {
+      return new HashMap<String, Object>();
+    }
     AvroData avroData = new AvroData(1); // arg is  cacheSize
     Object val = avroData.fromConnectData(record.valueSchema(), record.value());
     if (val instanceof NonRecordContainer) {

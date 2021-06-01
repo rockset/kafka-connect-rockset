@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.confluent.connect.avro.AvroData;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +50,9 @@ class JsonParser implements RecordParser {
     Exception cause;
     // First try to deserialize as map
     try {
+      if (record.value() == null) {
+        return new HashMap<String, Object>();
+      }
       return toMap(record.value());
     } catch (Exception e) {
       cause = e;

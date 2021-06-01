@@ -64,6 +64,35 @@ public class RocksetRequestWrapperTest {
     Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
   }
 
+  // Add a document with a null key using the JsonParser
+  @Test
+  public void testAddDocNullKey() throws Exception {
+    Object key = null;
+    SinkRecord sr = new SinkRecord("testPut", 1, null, key, null, "{\"name\": \"johnny\"}", 0);
+
+    OkHttpClient client = getMockOkHttpClient();
+
+    RocksetRequestWrapper rrw =
+        new RocksetRequestWrapper(rcc, client);
+    rrw.addDoc("testPut", Arrays.asList(sr), new JsonParser(), 10);
+
+    Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
+  }
+
+  // Add a document with a null Value using the JsonParser
+  @Test
+  public void testAddDocNullValue() throws Exception {
+    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, null, 0);
+
+    OkHttpClient client = getMockOkHttpClient();
+
+    RocksetRequestWrapper rrw =
+        new RocksetRequestWrapper(rcc, client);
+    rrw.addDoc("testPut", Arrays.asList(sr), new JsonParser(), 10);
+
+    Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
+  }
+
   @Test
   public void testAddDocAvro() throws Exception {
     Schema schema = SchemaBuilder.struct()
@@ -111,5 +140,43 @@ public class RocksetRequestWrapperTest {
     // addDoc should throw retriable exception
     assertThrows(RetriableException.class, () ->
         rrw.addDoc("testPut", Arrays.asList(sr1), new JsonParser(), 1));
+  }
+
+  // Add a doc with a null key using the Avro parser
+  @Test
+  public void testAddDocAvroNullKey() throws Exception {
+    Schema schema = SchemaBuilder.struct()
+        .field("name", Schema.STRING_SCHEMA)
+        .build();
+    Struct record = new Struct(schema)
+        .put("name", "johnny");
+    Object key = null;
+    SinkRecord sr = new SinkRecord("testPut", 1, null, key, schema, record, 0);
+
+    OkHttpClient client = getMockOkHttpClient();
+
+    RocksetRequestWrapper rrw = new RocksetRequestWrapper(rcc, client);
+
+    rrw.addDoc("testPut", Arrays.asList(sr), new AvroParser(), 10);
+
+    Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
+  }
+
+  // Add a doc with a null value using the Avro parser
+  @Test
+  public void testAddDocAvroNullValue() throws Exception {
+    Schema schema = SchemaBuilder.struct()
+        .field("name", Schema.STRING_SCHEMA)
+        .build();
+    Object value = null;
+    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", schema, value, 0);
+
+    OkHttpClient client = getMockOkHttpClient();
+
+    RocksetRequestWrapper rrw = new RocksetRequestWrapper(rcc, client);
+
+    rrw.addDoc("testPut", Arrays.asList(sr), new AvroParser(), 10);
+
+    Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
   }
 }
