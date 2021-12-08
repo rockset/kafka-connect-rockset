@@ -70,7 +70,7 @@ curl -i http://localhost:8083/connectors -H "Content-Type: application/json" -X 
       "tasks.max": "20",
       "rockset.task.threads": "5",
       "topics": "<your-kafka-topics separated by commas>",
-      "rockset.integration.key": "<rockset-kafka-integration-key>"
+      "rockset.integration.key": "<rockset-kafka-integration-key>",
       "rockset.apiserver.url": "https://api.rs2.usw2.rockset.com",
       "format": "json"
     }
