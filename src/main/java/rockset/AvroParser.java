@@ -6,11 +6,11 @@ import com.google.common.collect.ImmutableMap;
 import io.confluent.connect.avro.AvroData;
 import io.confluent.kafka.serializers.NonRecordContainer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 import org.apache.avro.generic.GenericData.Record;
 import org.apache.kafka.connect.data.Date;
@@ -46,7 +46,7 @@ class AvroParser implements RecordParser {
     }
     if (val instanceof Record) {
       Map<String, Object> map = getMap(val);
-      return convertLogicalTypes(record.valueSchema(), map);
+      return convertLogicalTypesMap(record.valueSchema(), map);
     }
 
     return getMap(val);
@@ -56,33 +56,46 @@ class AvroParser implements RecordParser {
     return LOGICAL_TYPE_CONVERTERS.containsKey(schema.name());
   }
 
-  private Map<String, Object> convertLogicalTypes(Schema valueSchema, Map<String, Object> map) {
+  private Object convertType(Schema schema, Object o) {
+    if (isLogicalType(schema)) {
+      return convertLogicalType(schema, o);
+    }
+
+    Type type = schema.type();
+
+    switch (type) {
+      case STRUCT:
+      case MAP:
+        return convertLogicalTypesMap(schema, (Map<String, Object>)o);
+
+      case ARRAY:
+        return convertLogicalTypesArray(schema, (List<Object>)o);
+    }
+
+    // cld be a scalar type, use as-is
+    return o;
+  }
+
+  public List<Object> convertLogicalTypesArray(Schema schema, List<Object> arr) {
+    List<Object> res = new ArrayList<>();
+
+    for (Object o : arr) {
+      res.add(convertType(schema.valueSchema(), o));
+    }
+
+    return res;
+  }
+
+  public Map<String, Object> convertLogicalTypesMap(Schema valueSchema, Map<String, Object> map) {
     for (Entry<String, Object> e : map.entrySet()) {
       Schema schema = getSchemaForField(valueSchema, e.getKey());
       if (schema == null) {
         continue;
       }
 
-      if (isLogicalType(schema)) {
-        Object value = convertLogicalType(schema, e.getValue());
-        e.setValue(value);
-        continue;
-      }
-      Type type = schema.type();
-      switch (type) {
-        case STRUCT:
-        case MAP:
-          e.setValue(convertLogicalTypes(schema, (Map<String, Object>) e.getValue()));
-          break;
-        case ARRAY:
-          Schema arraySchema = schema.valueSchema();
-          List<Object> convertedElements = ((List<Object>) e.getValue()).stream()
-              .map(element -> convertLogicalType(arraySchema, element))
-              .collect(Collectors.toList());
-          e.setValue(convertedElements);
-          break;
-      }
+      e.setValue(convertType(schema, e.getValue()));
     }
+
     return map;
   }
 
@@ -99,10 +112,8 @@ class AvroParser implements RecordParser {
         }
       }
     }
-    if (schema.type() == Type.MAP) {
-      return schema.valueSchema();
-    }
-    return null;
+
+    return schema.valueSchema();
   }
 
   public Map<String, Object> getMap(Object val) {
