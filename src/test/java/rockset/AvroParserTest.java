@@ -4,13 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
+import io.confluent.connect.avro.AvroData;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
@@ -51,6 +54,224 @@ public class AvroParserTest {
     verifySimpleKey(0.1);
     verifySimpleKey(false);
     verifySimpleKey(true);
+  }
+
+  @Test
+  public void testAvroArraySchema1() throws IOException {
+    final String schemaStr = "{\n" +
+            "  \"type\": \"record\",\n" +
+            "  \"name\": \"KsqlDataSourceSchema\",\n" +
+            "  \"namespace\": \"io.confluent.ksql.avro_schemas\",\n" +
+            "  \"fields\": [\n" +
+            "    {\n" +
+            "      \"name\": \"user_id\",\n" +
+            "      \"type\": [\n" +
+            "        \"null\",\n" +
+            "        {\n" +
+            "          \"type\": \"array\",\n" +
+            "          \"items\": [\n" +
+            "            \"null\",\n" +
+            "            \"string\"\n" +
+            "          ]\n" +
+            "        }\n" +
+            "      ],\n" +
+            "      \"default\": null\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(schemaStr);
+    Schema schema = new AvroData(1).toConnectSchema(avroSchema);
+
+    AvroParser avroParser = new AvroParser();
+
+    String value = "{\n" +
+            "  \"user_id\": [\n" +
+            "    \"1\",\n" +
+            "    \"2\",\n" +
+            "    \"3\"\n" +
+            "  ]\n" +
+            "}";
+
+    Map<String, Object> map = avroParser.getMap(value);
+    Map<String, Object> res = avroParser.convertLogicalTypesMap(schema, map);
+
+    assertEquals(res.keySet().stream().iterator().next(), "user_id");
+    assertEquals(new ObjectMapper().writeValueAsString(res.entrySet().stream().iterator().next().getValue()), "[\"1\",\"2\",\"3\"]");
+  }
+
+  @Test
+  public void testAvroArraySchema2() {
+    final String schemaStr = "{\n" +
+            "  \"type\": \"record\",\n" +
+            "  \"name\": \"KsqlDataSourceSchema\",\n" +
+            "  \"namespace\": \"io.confluent.ksql.avro_schemas\",\n" +
+            "  \"fields\": [\n" +
+            "    {\n" +
+            "      \"name\": \"data\",\n" +
+            "      \"type\": [\n" +
+            "        \"null\",\n" +
+            "        {\n" +
+            "          \"type\": \"array\",\n" +
+            "          \"items\": [\n" +
+            "            {\n" +
+            "              \"type\": \"record\",\n" +
+            "              \"name\": \"KsqlDataSourceSchema_data\",\n" +
+            "              \"fields\": [\n" +
+            "                {\n" +
+            "                  \"name\": \"key\",\n" +
+            "                  \"type\": [\n" +
+            "                    \"null\",\n" +
+            "                    \"string\"\n" +
+            "                  ],\n" +
+            "                  \"default\": null\n" +
+            "                },\n" +
+            "                {\n" +
+            "                  \"name\": \"value\",\n" +
+            "                  \"type\": [\n" +
+            "                    \"null\",\n" +
+            "                    \"string\"\n" +
+            "                  ],\n" +
+            "                  \"default\": null\n" +
+            "                }\n" +
+            "              ],\n" +
+            "              \"connect.internal.type\": \"MapEntry\"\n" +
+            "            }\n" +
+            "          ]\n" +
+            "        }\n" +
+            "      ],\n" +
+            "      \"default\": null\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(schemaStr);
+    Schema schema = new AvroData(1).toConnectSchema(avroSchema);
+
+    AvroParser avroParser = new AvroParser();
+
+    String value = "{\n" +
+            "  \"data\": [\n" +
+            "    {\n" +
+            "      \"KsqlDataSourceSchema_data\": {\n" +
+            "        \"key\": \"1\",\n" +
+            "        \"value\": \"11\"\n" +
+            "      }\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"KsqlDataSourceSchema_data\": {\n" +
+            "        \"key\": \"2\",\n" +
+            "        \"value\": \"22\"\n" +
+            "      }\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+
+    Map<String, Object> map = avroParser.getMap(value);
+    Map<String, Object> res = avroParser.convertLogicalTypesMap(schema, map);
+
+    assertEquals("data", res.keySet().stream().iterator().next());
+    List<Map<String, Object>> values = (List<Map<String, Object>>)res.entrySet().stream().iterator().next().getValue();
+
+    assertEquals(values.size(), 2);
+    assertEquals(((Map<String, String>)values.get(0).get("KsqlDataSourceSchema_data")).get("key"), "1");
+    assertEquals(((Map<String, String>)values.get(0).get("KsqlDataSourceSchema_data")).get("value"), "11");
+    assertEquals(((Map<String, String>)values.get(1).get("KsqlDataSourceSchema_data")).get("key"), "2");
+    assertEquals(((Map<String, String>)values.get(1).get("KsqlDataSourceSchema_data")).get("value"), "22");
+  }
+
+  @Test
+  public void testAvroArraySchema3() throws IOException {
+    Schema schema = SchemaBuilder.struct().name("record").field("data", SchemaBuilder.array(
+            SchemaBuilder.map(Schema.STRING_SCHEMA, Timestamp.SCHEMA)));
+
+    String value = "{\n" +
+            "  \"data\": [\n" +
+            "    {\n" +
+            "      \"1\": 1642784652\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"2\": 1642784653\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"3\": 1642784654\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+
+    AvroParser avroParser = new AvroParser();
+    Map<String, Object> map = avroParser.getMap(value);
+    Map<String, Object> res = avroParser.convertLogicalTypesMap(schema, map);
+
+    String expectedOutput = "{\n" +
+            "  \"data\" : [ {\n" +
+            "    \"1\" : {\n" +
+            "      \"value\" : 1642784652,\n" +
+            "      \"__rockset_type\" : \"timestamp\"\n" +
+            "    }\n" +
+            "  }, {\n" +
+            "    \"2\" : {\n" +
+            "      \"value\" : 1642784653,\n" +
+            "      \"__rockset_type\" : \"timestamp\"\n" +
+            "    }\n" +
+            "  }, {\n" +
+            "    \"3\" : {\n" +
+            "      \"value\" : 1642784654,\n" +
+            "      \"__rockset_type\" : \"timestamp\"\n" +
+            "    }\n" +
+            "  } ]\n" +
+            "}";
+
+    assertEquals(expectedOutput.replaceAll("[\\n\\t ]", ""), new ObjectMapper().writeValueAsString(res));
+  }
+
+  @Test
+  public void testAvroArraySchema4() throws IOException {
+    Schema schema = SchemaBuilder.struct().name("record").field("data", SchemaBuilder.struct().field("foo", SchemaBuilder.array(
+            SchemaBuilder.map(Schema.STRING_SCHEMA, Timestamp.SCHEMA))));
+
+    String value = "{\n" +
+            "  \"data\": {\n" +
+            "    \"foo\": [\n" +
+            "      {\n" +
+            "        \"1\": 1642784652\n" +
+            "      },\n" +
+            "      {\n" +
+            "        \"2\": 1642784653\n" +
+            "      },\n" +
+            "      {\n" +
+            "        \"3\": 1642784654\n" +
+            "      }\n" +
+            "    ]\n" +
+            "  }\n" +
+            "}";
+
+    AvroParser avroParser = new AvroParser();
+    Map<String, Object> map = avroParser.getMap(value);
+    Map<String, Object> res = avroParser.convertLogicalTypesMap(schema, map);
+
+    String expectedOutput = "{\n" +
+            "  \"data\" : {\n" +
+            "    \"foo\" : [ {\n" +
+            "      \"1\" : {\n" +
+            "        \"value\" : 1642784652,\n" +
+            "        \"__rockset_type\" : \"timestamp\"\n" +
+            "      }\n" +
+            "    }, {\n" +
+            "      \"2\" : {\n" +
+            "        \"value\" : 1642784653,\n" +
+            "        \"__rockset_type\" : \"timestamp\"\n" +
+            "      }\n" +
+            "    }, {\n" +
+            "      \"3\" : {\n" +
+            "        \"value\" : 1642784654,\n" +
+            "        \"__rockset_type\" : \"timestamp\"\n" +
+            "      }\n" +
+            "    } ]\n" +
+            "  }\n" +
+            "}";
+
+    assertEquals(expectedOutput.replaceAll("[\\n\\t ]", ""), new ObjectMapper().writeValueAsString(res));
   }
 
   private void verifySimpleKey(Object key) throws IOException {
