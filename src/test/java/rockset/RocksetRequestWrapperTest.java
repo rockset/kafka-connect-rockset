@@ -90,7 +90,7 @@ public class RocksetRequestWrapperTest {
         new RocksetRequestWrapper(rcc, client);
     rrw.addDoc("testPut", Arrays.asList(sr), new JsonParser(), 10);
 
-    Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
+    Mockito.verify(client, Mockito.times(0)).newCall(Mockito.any());
   }
 
   @Test
@@ -177,6 +177,6 @@ public class RocksetRequestWrapperTest {
 
     rrw.addDoc("testPut", Arrays.asList(sr), new AvroParser(), 10);
 
-    Mockito.verify(client, Mockito.times(1)).newCall(Mockito.any());
+    Mockito.verify(client, Mockito.times(0)).newCall(Mockito.any());
   }
 }

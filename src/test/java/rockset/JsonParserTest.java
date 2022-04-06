@@ -19,7 +19,7 @@ public class JsonParserTest {
   public void testBasicJsonObject() {
     Map<String, Object> obj = ImmutableMap.of("foo", "bar", "foo2", "bar2");
     SinkRecord sr = new SinkRecord("test-topic", 1, null, null, null, serialize(obj), 0);
-    assertEquals(obj, parseValue(sr));
+    assertEquals(obj, parseSingleValue(sr));
   }
 
   @Test
@@ -27,7 +27,7 @@ public class JsonParserTest {
     List<Map<String, Object>> obj = ImmutableList.of(
         ImmutableMap.of("foo", "bar", "foo2", "bar2"));
     SinkRecord sr = new SinkRecord("test-topic", 1, null, null, null, serialize(obj), 0);
-    assertEquals(obj.get(0), parseValue(sr));
+    assertEquals(obj.get(0), parseSingleValue(sr));
   }
 
   @Test
@@ -37,14 +37,14 @@ public class JsonParserTest {
         ImmutableMap.of("foo", "bar", "foo2", "bar2"),
         ImmutableMap.of("foo", "bar", "foo2", "bar2"));
     SinkRecord sr = new SinkRecord("test-topic", 1, null, null, null, serialize(obj), 0);
-    assertThrows(RuntimeException.class, () -> parseValue(sr));
+    assertEquals(obj, parseList(sr));
   }
 
   @Test
   public void testEmptyList() {
     List<Map<String, Object>> obj = ImmutableList.of();
     SinkRecord sr = new SinkRecord("test-topic", 1, null, null, null, serialize(obj), 0);
-    assertThrows(RuntimeException.class, () -> parseValue(sr));
+    assertThrows(RuntimeException.class, () -> parseSingleValue(sr));
   }
 
   private Object serialize(Object obj) {
@@ -55,7 +55,11 @@ public class JsonParserTest {
     }
   }
 
-  public Map<String, Object> parseValue(SinkRecord record) {
+  public Map<String, Object> parseSingleValue(SinkRecord record) {
+    return parseList(record).get(0);
+  }
+
+  public List<Map<String, Object>> parseList(SinkRecord record) {
     return new JsonParser().parseValue(record);
   }
 

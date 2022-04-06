@@ -7,7 +7,7 @@ import io.confluent.connect.avro.AvroData;
 import io.confluent.kafka.serializers.NonRecordContainer;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,10 +34,9 @@ class AvroParser implements RecordParser {
       );
 
   @Override
-  public Map<String, Object> parseValue(SinkRecord record) {
-    // If there is no value then return an empty map
+  public List<Map<String, Object>> parseValue(SinkRecord record) {
     if (record.value() == null) {
-      return new HashMap<String, Object>();
+      return Collections.emptyList();
     }
     AvroData avroData = new AvroData(1); // arg is  cacheSize
     Object val = avroData.fromConnectData(record.valueSchema(), record.value());
@@ -46,10 +45,10 @@ class AvroParser implements RecordParser {
     }
     if (val instanceof Record) {
       Map<String, Object> map = getMap(val);
-      return convertLogicalTypesMap(record.valueSchema(), map);
+      return Collections.singletonList(convertLogicalTypesMap(record.valueSchema(), map));
     }
 
-    return getMap(val);
+    return Collections.singletonList(getMap(val));
   }
 
   private boolean isLogicalType(Schema schema) {

@@ -91,14 +91,15 @@ public class RocksetRequestWrapper implements RocksetWrapper {
 
       try {
         Object key = recordParser.parseKey(record);
-        Map<String, Object> doc = recordParser.parseValue(record);
+        List<Map<String, Object>> docs = recordParser.parseValue(record);
+        docs.stream()
+                .map(doc -> new KafkaMessage()
+                        .document(doc)
+                        .key(key)
+                        .offset(record.kafkaOffset())
+                        .partition(record.kafkaPartition()))
+                .forEach(messages::add);
 
-        KafkaMessage message = new KafkaMessage()
-            .document(doc)
-            .key(key)
-            .offset(record.kafkaOffset())
-            .partition(record.kafkaPartition());
-        messages.add(message);
       } catch (Exception e) {
         throw new ConnectException("Invalid JSON encountered in stream ", e);
       }
@@ -108,7 +109,9 @@ public class RocksetRequestWrapper implements RocksetWrapper {
   }
 
   private void sendDocs(String topic, List<KafkaMessage> messages) {
-    Preconditions.checkArgument(!messages.isEmpty());
+    if (messages.isEmpty()){
+        return;
+    }
     log.debug("Sending batch of {} messages for topic: {} to Rockset", messages.size(), topic);
 
     KafkaDocumentsRequest documentsRequest = new KafkaDocumentsRequest()
