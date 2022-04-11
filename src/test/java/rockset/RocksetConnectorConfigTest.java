@@ -41,9 +41,19 @@ public class RocksetConnectorConfigTest {
   }
 
   @Test
+  public void testBadBatchConfig() {
+    Map<String, String> badBatchConfig = new HashMap<>();
+    badBatchConfig.put("rockset.integration.key", "kafka://5");
+    badBatchConfig.put("rockset.batch.size", "xyz");
+
+    assertThrows(ConfigException.class, () -> new RocksetConnectorConfig(badBatchConfig));
+  }
+
+  @Test
   public void testGoodConfig() {
     Map<String, String> goodSettings = new HashMap<>();
     goodSettings.put("rockset.integration.key", "kafka://5");
+    goodSettings.put("rockset.batch.size", "10");
     goodSettings.put("format", "jSon");
 
     assertDoesNotThrow(() -> new RocksetConnectorConfig(goodSettings));

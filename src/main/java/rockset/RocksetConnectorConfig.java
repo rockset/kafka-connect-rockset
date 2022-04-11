@@ -24,6 +24,7 @@ public class RocksetConnectorConfig extends AbstractConfig {
   public static final String ROCKSET_COLLECTION = "rockset.collection";
   public static final String ROCKSET_WORKSPACE = "rockset.workspace";
   public static final String ROCKSET_TASK_THREADS = "rockset.task.threads";
+  public static final String ROCKSET_BATCH_SIZE = "rockset.batch.size";
 
   private RocksetConnectorConfig(ConfigDef config, Map<String, String> originals) {
     super(config, originals, true);
@@ -62,6 +63,14 @@ public class RocksetConnectorConfig extends AbstractConfig {
                 .importance(Importance.MEDIUM)
                 .defaultValue(5)
                 .build()
+        )
+
+        .define(
+                ConfigKeyBuilder.of(ROCKSET_BATCH_SIZE, Type.INT)
+                        .documentation("Number of documents batched before a write to Rockset")
+                        .importance(Importance.MEDIUM)
+                        .defaultValue(1000)
+                        .build()
         )
 
         .define(
@@ -156,6 +165,8 @@ public class RocksetConnectorConfig extends AbstractConfig {
   }
 
   public int getRocksetTaskThreads() { return this.getInt(ROCKSET_TASK_THREADS); }
+
+  public int getRocksetBatchSize() { return this.getInt(ROCKSET_BATCH_SIZE); }
 
   public String getFormat() {
     return this.getString(FORMAT);

@@ -46,7 +46,6 @@ public class RocksetSinkTask extends SinkTask {
   private RocksetConnectorConfig config;
   private RecordParser recordParser;
 
-  private static final int BATCH_SIZE = 1000;
 
   private RecordParser getRecordParser(String format) {
     switch (format.toLowerCase()) {
@@ -159,7 +158,7 @@ public class RocksetSinkTask extends SinkTask {
 
   private void addDocs(String topic, Collection<SinkRecord> records) {
     log.debug("Adding {} records to Rockset for topic: {}", records.size(), topic);
-    this.rw.addDoc(topic, records, recordParser, BATCH_SIZE);
+    this.rw.addDoc(topic, records, recordParser, this.config.getRocksetBatchSize());
   }
 
   @Override
