@@ -1,4 +1,6 @@
 # Rockset Kafka Connect Changelog
+## v1.4.0 2022-04-14
+- Add batch size parameter
 
 ## v1.3.0 2020-11-05
 - Support list type messages
