@@ -69,6 +69,7 @@ curl -i http://localhost:8083/connectors -H "Content-Type: application/json" -X 
       "connector.class": "rockset.RocksetSinkConnector",
       "tasks.max": "20",
       "rockset.task.threads": "5",
+      "rockset.batch.size": "1000",
       "topics": "<your-kafka-topics separated by commas>",
       "rockset.integration.key": "<rockset-kafka-integration-key>",
       "rockset.apiserver.url": "https://api.rs2.usw2.rockset.com",
@@ -120,6 +121,7 @@ See the [the Confluent documentation](https://docs.confluent.io/current/connect/
 | Name | Description | Default Value |
 |-------- |----------------------------|-----------------------|
 | `rockset.task.threads` | Number of threads that each task should spawn when writing to Rockset. | 5 |
+| `rockset.batch.size` | Max number of documents to be written within a single network request | 1000 |
 
 ## License
 
