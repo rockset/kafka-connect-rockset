@@ -68,8 +68,9 @@ public class LogicalConverters {
 
     private Map<String, Object> convertToRocksetTimestamp(long timestampMillis) {
       Map<String, Object> timestampObj = new HashMap<>();
+      // rockset expects timestamps in microseconds
       timestampObj.put("__rockset_type", "timestamp");
-      timestampObj.put("value",  timestampMillis);
+      timestampObj.put("value",  timestampMillis * 1000);
       return timestampObj;
     }
   }

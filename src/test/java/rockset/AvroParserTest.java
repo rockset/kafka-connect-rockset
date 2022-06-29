@@ -206,17 +206,17 @@ public class AvroParserTest {
     String expectedOutput = "{\n" +
             "  \"data\" : [ {\n" +
             "    \"1\" : {\n" +
-            "      \"value\" : 1642784652,\n" +
+            "      \"value\" : 1642784652000,\n" +
             "      \"__rockset_type\" : \"timestamp\"\n" +
             "    }\n" +
             "  }, {\n" +
             "    \"2\" : {\n" +
-            "      \"value\" : 1642784653,\n" +
+            "      \"value\" : 1642784653000,\n" +
             "      \"__rockset_type\" : \"timestamp\"\n" +
             "    }\n" +
             "  }, {\n" +
             "    \"3\" : {\n" +
-            "      \"value\" : 1642784654,\n" +
+            "      \"value\" : 1642784654000,\n" +
             "      \"__rockset_type\" : \"timestamp\"\n" +
             "    }\n" +
             "  } ]\n" +
@@ -254,17 +254,17 @@ public class AvroParserTest {
             "  \"data\" : {\n" +
             "    \"foo\" : [ {\n" +
             "      \"1\" : {\n" +
-            "        \"value\" : 1642784652,\n" +
+            "        \"value\" : 1642784652000,\n" +
             "        \"__rockset_type\" : \"timestamp\"\n" +
             "      }\n" +
             "    }, {\n" +
             "      \"2\" : {\n" +
-            "        \"value\" : 1642784653,\n" +
+            "        \"value\" : 1642784653000,\n" +
             "        \"__rockset_type\" : \"timestamp\"\n" +
             "      }\n" +
             "    }, {\n" +
             "      \"3\" : {\n" +
-            "        \"value\" : 1642784654,\n" +
+            "        \"value\" : 1642784654000,\n" +
             "        \"__rockset_type\" : \"timestamp\"\n" +
             "      }\n" +
             "    } ]\n" +
@@ -636,8 +636,8 @@ public class AvroParserTest {
     assertEquals(expectedValue, parseValue(sr));
   }
 
-  private ImmutableMap<String, Object> rocksetTimestampType(Object time) {
-    return ImmutableMap.of("__rockset_type", "timestamp", "value", time);
+  private ImmutableMap<String, Object> rocksetTimestampType(long timeMs) {
+    return ImmutableMap.of("__rockset_type", "timestamp", "value", timeMs * 1000);
   }
 
   private ImmutableMap<String, Object> rocksetDateType(Object date) {
