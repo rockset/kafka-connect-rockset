@@ -1,4 +1,9 @@
 # Rockset Kafka Connect Changelog
+## v1.4.1 2022-09-21
+
+- Fix Avro parser handling nulls
+- Fix timestamp handling
+
 ## v1.4.0 2022-04-14
 - Add batch size parameter
 
