@@ -722,12 +722,10 @@ public class AvroParserTest {
             "}";
 
     Map<String, Object> map = avroParser.getMap(value);
-    try {
-      avroParser.convertLogicalTypesMap(schema, map);
-      throw new RuntimeException("should have failed");
-    } catch (DataException e) {
-      assertEquals(e.getMessage(), "found non-declared field: nondefinedfield");
-    }
+    assertThrows(
+            DataException.class,
+            () -> avroParser.convertLogicalTypesMap(schema, map),
+            "found non-declared field: nondefinedfield");
   }
 
   private ImmutableMap<String, Object> rocksetTimestampType(long timeMs) {
