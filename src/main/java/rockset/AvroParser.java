@@ -19,6 +19,7 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Schema.Type;
 import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
+import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import rockset.LogicalConverters.DateConverter;
 import rockset.LogicalConverters.LogicalTypeConverter;
@@ -121,6 +122,8 @@ class AvroParser implements RecordParser {
           return f.schema();
         }
       }
+
+      throw new DataException("found non-declared field: " + key);
     }
 
     return schema.valueSchema();

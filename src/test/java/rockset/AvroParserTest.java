@@ -22,6 +22,7 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.api.Test;
 
@@ -692,6 +693,41 @@ public class AvroParserTest {
     expectedValues.add(null);
     expectedValues.add(null);
     assertEquals(new ArrayList<Object>(res.values()), expectedValues);
+  }
+
+  @Test
+  public void testUnexpectedField() throws IOException {
+    final String schemaStr = "{\n" +
+            "  \"type\": \"record\",\n" +
+            "  \"name\": \"KsqlDataSourceSchema\",\n" +
+            "  \"namespace\": \"io.confluent.ksql.avro_schemas\",\n" +
+            "  \"fields\": [\n" +
+            "    {\n" +
+            "      \"name\": \"map_field\",\n" +
+            "      \"type\": [\n" +
+            "        \"null\"\n" +
+            "      ],\n" +
+            "      \"default\": null\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(schemaStr);
+    Schema schema = new AvroData(1).toConnectSchema(avroSchema);
+
+    AvroParser avroParser = new AvroParser();
+
+    String value = "{\n" +
+            "  \"nondefinedfield\": 3\n" +
+            "}";
+
+    Map<String, Object> map = avroParser.getMap(value);
+    try {
+      avroParser.convertLogicalTypesMap(schema, map);
+      throw new RuntimeException("should have failed");
+    } catch (DataException e) {
+      assertEquals(e.getMessage(), "found non-declared field: nondefinedfield");
+    }
   }
 
   private ImmutableMap<String, Object> rocksetTimestampType(long timeMs) {
