@@ -19,6 +19,7 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Schema.Type;
 import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
+import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import rockset.LogicalConverters.DateConverter;
 import rockset.LogicalConverters.LogicalTypeConverter;
@@ -57,13 +58,15 @@ class AvroParser implements RecordParser {
   }
 
   private Object convertType(Schema schema, Object o) {
+    if (o == null) {
+      return null;
+    }
+
     if (isLogicalType(schema)) {
       return convertLogicalType(schema, o);
     }
 
-    Type type = schema.type();
-
-    switch (type) {
+    switch (schema.type()) {
       case STRUCT:
       case MAP:
         return convertLogicalTypesMap(schema, (Map<String, Object>)o);
@@ -77,6 +80,10 @@ class AvroParser implements RecordParser {
   }
 
   public List<Object> convertLogicalTypesArray(Schema schema, List<Object> arr) {
+    if (arr == null) {
+      return null;
+    }
+
     List<Object> res = new ArrayList<>();
 
     for (Object o : arr) {
@@ -87,6 +94,10 @@ class AvroParser implements RecordParser {
   }
 
   public Map<String, Object> convertLogicalTypesMap(Schema valueSchema, Map<String, Object> map) {
+    if (map == null) {
+      return null;
+    }
+
     for (Entry<String, Object> e : map.entrySet()) {
       Schema schema = getSchemaForField(valueSchema, e.getKey());
       if (schema == null) {
@@ -111,12 +122,18 @@ class AvroParser implements RecordParser {
           return f.schema();
         }
       }
+
+      throw new DataException("found non-declared field: " + key);
     }
 
     return schema.valueSchema();
   }
 
   public Map<String, Object> getMap(Object val) {
+    if (val == null) {
+      return null;
+    }
+
     try {
       return new ObjectMapper().readValue(val.toString(), new TypeReference<Map<String, Object>>() {});
     } catch (IOException e) {

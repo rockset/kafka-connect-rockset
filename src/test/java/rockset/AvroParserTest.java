@@ -9,10 +9,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableSet;
 import io.confluent.connect.avro.AvroData;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
@@ -20,6 +22,7 @@ import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.api.Test;
 
@@ -634,6 +637,95 @@ public class AvroParserTest {
 
     SinkRecord sr = makeSinkRecord(null, null, valueSchema, value);
     assertEquals(expectedValue, parseValue(sr));
+  }
+
+  @Test
+  public void testNullTypes() throws IOException {
+    final String schemaStr = "{\n" +
+            "  \"type\": \"record\",\n" +
+            "  \"name\": \"KsqlDataSourceSchema\",\n" +
+            "  \"namespace\": \"io.confluent.ksql.avro_schemas\",\n" +
+            "  \"fields\": [\n" +
+            "    {\n" +
+            "      \"name\": \"array_field\",\n" +
+            "      \"type\": [\n" +
+            "        \"null\",\n" +
+            "        {\n" +
+            "          \"type\": \"array\",\n" +
+            "          \"items\": [\n" +
+            "            \"null\",\n" +
+            "            \"string\"\n" +
+            "          ]\n" +
+            "        }\n" +
+            "      ],\n" +
+            "      \"default\": null\n" +
+            "    },\n" +
+            "    {\n" +
+            "      \"name\": \"map_field\",\n" +
+            "      \"type\": [\n" +
+            "        \"null\",\n" +
+            "        {\n" +
+            "          \"type\": \"map\",\n" +
+            "          \"values\": \"int\"\n" +
+            "        }\n" +
+            "      ],\n" +
+            "      \"default\": null\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(schemaStr);
+    Schema schema = new AvroData(1).toConnectSchema(avroSchema);
+
+    AvroParser avroParser = new AvroParser();
+
+    String value = "{\n" +
+            "  \"array_field\": null,\n" +
+            "  \"map_field\": null\n" +
+            "}";
+
+    Map<String, Object> map = avroParser.getMap(value);
+    Map<String, Object> res = avroParser.convertLogicalTypesMap(schema, map);
+
+    assertEquals(res.keySet(), ImmutableSet.of("array_field", "map_field"));
+
+    List<Object> expectedValues = new ArrayList<Object>();
+    expectedValues.add(null);
+    expectedValues.add(null);
+    assertEquals(new ArrayList<Object>(res.values()), expectedValues);
+  }
+
+  @Test
+  public void testUnexpectedField() throws IOException {
+    final String schemaStr = "{\n" +
+            "  \"type\": \"record\",\n" +
+            "  \"name\": \"KsqlDataSourceSchema\",\n" +
+            "  \"namespace\": \"io.confluent.ksql.avro_schemas\",\n" +
+            "  \"fields\": [\n" +
+            "    {\n" +
+            "      \"name\": \"map_field\",\n" +
+            "      \"type\": [\n" +
+            "        \"null\"\n" +
+            "      ],\n" +
+            "      \"default\": null\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}";
+
+    org.apache.avro.Schema avroSchema = new org.apache.avro.Schema.Parser().parse(schemaStr);
+    Schema schema = new AvroData(1).toConnectSchema(avroSchema);
+
+    AvroParser avroParser = new AvroParser();
+
+    String value = "{\n" +
+            "  \"nondefinedfield\": 3\n" +
+            "}";
+
+    Map<String, Object> map = avroParser.getMap(value);
+    assertThrows(
+            DataException.class,
+            () -> avroParser.convertLogicalTypesMap(schema, map),
+            "found non-declared field: nondefinedfield");
   }
 
   private ImmutableMap<String, Object> rocksetTimestampType(long timeMs) {
