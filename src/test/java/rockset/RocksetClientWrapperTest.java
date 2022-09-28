@@ -9,7 +9,6 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.testng.Assert;
 
 import java.util.Arrays;
 import java.util.HashMap;
