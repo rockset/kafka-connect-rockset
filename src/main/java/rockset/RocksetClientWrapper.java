@@ -3,6 +3,7 @@ package rockset;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rockset.client.ApiException;
 import com.rockset.client.RocksetClient;
+import com.rockset.client.api.DocumentsApi;
 import com.rockset.client.model.AddDocumentsRequest;
 
 import java.util.Collection;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 public class RocksetClientWrapper implements RocksetWrapper {
   private static Logger log = LoggerFactory.getLogger(RocksetClientWrapper.class);
   private RocksetClient client;
+  private DocumentsApi documentsClient;
   private ObjectMapper mapper;
   private String workspace;
   private String collection;
@@ -27,6 +29,7 @@ public class RocksetClientWrapper implements RocksetWrapper {
       log.info("Creating new Rockset client");
       this.client = new RocksetClient(config.getRocksetApikey(), config.getRocksetApiServerUrl());
     }
+    this.documentsClient = client.documents;
 
     this.mapper = new ObjectMapper();
     this.workspace = config.getRocksetWorkspace();
@@ -34,8 +37,10 @@ public class RocksetClientWrapper implements RocksetWrapper {
   }
 
   // used for testing
-  public RocksetClientWrapper(RocksetConnectorConfig config, RocksetClient client) {
+  public RocksetClientWrapper(RocksetConnectorConfig config, RocksetClient client,
+                              DocumentsApi documentsClient) {
     this.client = client;
+    this.documentsClient = documentsClient;
     this.mapper = new ObjectMapper();
     this.workspace = config.getRocksetWorkspace();
     this.collection = config.getRocksetCollection();
@@ -72,7 +77,7 @@ public class RocksetClientWrapper implements RocksetWrapper {
   private void sendDocs(String topic, List<Object> messages) {
     try {
       AddDocumentsRequest documentsRequest = new AddDocumentsRequest().data(messages);
-      client.addDocuments(workspace, collection, documentsRequest);
+      documentsClient.add(workspace, collection, documentsRequest);
     } catch (Exception e) {
       if (isInternalError(e)) {
         // internal errors are retriable errors
