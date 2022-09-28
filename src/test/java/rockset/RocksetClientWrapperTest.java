@@ -1,6 +1,7 @@
 package rockset;
 
 import com.rockset.client.RocksetClient;
+import com.rockset.client.api.DocumentsApi;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
@@ -9,7 +10,6 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.testng.Assert;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,7 +31,9 @@ public class RocksetClientWrapperTest {
   public void testAddDocJson() {
     SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, "{\"name\": \"johnny\"}", 0);
 
-    RocksetClientWrapper rcw = new RocksetClientWrapper(rcc, Mockito.mock(RocksetClient.class));
+    RocksetClientWrapper rcw = new RocksetClientWrapper(rcc,
+            Mockito.mock(RocksetClient.class),
+            Mockito.mock(DocumentsApi.class));
     rcw.addDoc("testPut", Arrays.asList(sr), new JsonParser(), 10);
   }
 
@@ -44,7 +46,9 @@ public class RocksetClientWrapperTest {
         .put("name", "johnny");
     SinkRecord sr = new SinkRecord("testPut", 1, null, "key", schema, record, 0);
 
-    RocksetClientWrapper rcw = new RocksetClientWrapper(rcc, Mockito.mock(RocksetClient.class));
+    RocksetClientWrapper rcw = new RocksetClientWrapper(rcc,
+            Mockito.mock(RocksetClient.class),
+            Mockito.mock(DocumentsApi.class));
 
     rcw.addDoc("testPut", Arrays.asList(sr), new AvroParser(), 10);
   }
