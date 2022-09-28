@@ -31,12 +31,12 @@
         <dependency>
             <groupId>com.rockset</groupId>
             <artifactId>rockset-java</artifactId>
-            <version>0.6.0</version>
+            <version>0.9.3</version>
         </dependency>
         <dependency>
             <groupId>io.confluent</groupId>
             <artifactId>kafka-connect-avro-converter</artifactId>
-            <version>5.2.1</version>
+            <version>7.2.2</version>
         </dependency>
     </dependencies>
 
@@ -44,7 +44,7 @@
         <plugins>
             <plugin>
                 <groupId>io.confluent</groupId>
-                <version>0.11.2</version>
+                <version>0.12.0</version>
                 <artifactId>kafka-connect-maven-plugin</artifactId>
                 <executions>
                     <execution>
