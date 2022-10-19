@@ -63,8 +63,8 @@ public class RocksetClientWrapper implements RocksetWrapper {
       }
 
       try {
-        Map<String, Object> doc = recordParser.parseValue(record);
-        messages.add(doc);
+        List<Map<String, Object>> docs = recordParser.parseValue(record);
+        messages.addAll(docs);
       }
       catch (Exception e) {
         throw new ConnectException("Invalid JSON encountered in stream", e);

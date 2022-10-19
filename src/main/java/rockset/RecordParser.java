@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.confluent.connect.avro.AvroData;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public interface RecordParser {
 
-  Map<String, Object> parseValue(SinkRecord record);
+  List<Map<String, Object>> parseValue(SinkRecord record);
 
   /**
    * Parse key from a sink record.
@@ -46,14 +47,14 @@ class JsonParser implements RecordParser {
   private static final ObjectMapper mapper = new ObjectMapper();
 
   @Override
-  public Map<String, Object> parseValue(SinkRecord record) {
+  public List<Map<String, Object>> parseValue(SinkRecord record) {
     Exception cause;
     // First try to deserialize as map
     try {
       if (record.value() == null) {
-        return new HashMap<String, Object>();
+        return Collections.emptyList();
       }
-      return toMap(record.value());
+      return Collections.singletonList(toMap(record.value()));
     } catch (Exception e) {
       cause = e;
     }
@@ -70,10 +71,7 @@ class JsonParser implements RecordParser {
       log.warn(message, cause);
       throw new RuntimeException(message, e);
     }
-
-    int size = maps.size();
-    checkArgument(size == 1, "Only 1 object allowed in list type messages. Found %s", size);
-    return maps.get(0);
+    return maps;
   }
 
   private static Map<String, Object> toMap(Object value) throws IOException {

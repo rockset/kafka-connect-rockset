@@ -295,7 +295,7 @@ public class AvroParserTest {
     Map<String, Object> expectedValue = ImmutableMap.of(
         "id", 2,
         "name", "my-name");
-    assertEquals(expectedValue, parseValue(sr));
+    assertEquals(expectedValue, parseSingleValue(sr));
   }
 
   // test avro parsing without key
@@ -330,7 +330,7 @@ public class AvroParserTest {
         "id", 1234,
         "details", expectedDetails,
         "name", "my-name");
-    assertEquals(expectedValue, parseValue(sr));
+    assertEquals(expectedValue, parseSingleValue(sr));
   }
 
   @Test
@@ -380,7 +380,7 @@ public class AvroParserTest {
           "id", 1234,
           "details", expectedDetails,
           "name", "my-name");
-      assertEquals(expectedValue, parseValue(sinkRecord));
+      assertEquals(expectedValue, parseSingleValue(sinkRecord));
     }
   }
 
@@ -410,7 +410,7 @@ public class AvroParserTest {
         "time5", rocksetTimeType("00:00:00:000000"));
 
     SinkRecord sinkRecord = makeSinkRecord(null, null, timeSchema, value);
-    assertEquals(expected, parseValue(sinkRecord));
+    assertEquals(expected, parseSingleValue(sinkRecord));
   }
 
   @Test
@@ -437,8 +437,8 @@ public class AvroParserTest {
         "date5", rocksetDateType("2016/07/18"));
 
     SinkRecord sinkRecord = makeSinkRecord(null, null, dateSchema, value);
-    System.out.println(parseValue(sinkRecord));
-    assertEquals(expected, parseValue(sinkRecord));
+    System.out.println(parseSingleValue(sinkRecord));
+    assertEquals(expected, parseSingleValue(sinkRecord));
   }
 
   @Test
@@ -465,7 +465,7 @@ public class AvroParserTest {
         "timestamp5", rocksetTimestampType(1583966531712L));
 
     SinkRecord sinkRecord = makeSinkRecord(null, null, detailsSchema, value);
-    assertEquals(expected, parseValue(sinkRecord));
+    assertEquals(expected, parseSingleValue(sinkRecord));
   }
 
   @Test
@@ -486,7 +486,7 @@ public class AvroParserTest {
         "date", rocksetDateType("1970/01/02"));
 
     SinkRecord sinkRecord = makeSinkRecord(null, null, valueSchema, value);
-    assertEquals(expected, parseValue(sinkRecord));
+    assertEquals(expected, parseSingleValue(sinkRecord));
   }
 
   @Test
@@ -519,7 +519,7 @@ public class AvroParserTest {
         "nested3", ImmutableMap.of("timestamp", rocksetTimestampType(1234L)));
 
     SinkRecord sr = makeSinkRecord(null, null, valueSchema, value);
-    assertEquals(expectedValue, parseValue(sr));
+    assertEquals(expectedValue, parseSingleValue(sr));
   }
 
   @Test
@@ -544,7 +544,7 @@ public class AvroParserTest {
         "nested3", ImmutableMap.of("timestamp", rocksetTimestampType(1234L)));
 
     SinkRecord sr = makeSinkRecord(null, null, valueSchema, value);
-    assertEquals(expectedValue, parseValue(sr));
+    assertEquals(expectedValue, parseSingleValue(sr));
   }
 
   @Test
@@ -587,7 +587,7 @@ public class AvroParserTest {
             rocksetTimestampType(1234L)));
 
     SinkRecord sr = makeSinkRecord(null, null, valueSchema, value);
-    assertEquals(expectedValue, parseValue(sr));
+    assertEquals(expectedValue, parseSingleValue(sr));
   }
 
   @Test
@@ -636,7 +636,7 @@ public class AvroParserTest {
                 rocksetTimestampType(1234L))));
 
     SinkRecord sr = makeSinkRecord(null, null, valueSchema, value);
-    assertEquals(expectedValue, parseValue(sr));
+    assertEquals(expectedValue, parseSingleValue(sr));
   }
 
   @Test
@@ -740,8 +740,8 @@ public class AvroParserTest {
     return ImmutableMap.of( "__rockset_type", "time", "value", time);
   }
 
-  private Map<String, Object> parseValue(SinkRecord sinkRecord) {
-    return  new AvroParser().parseValue(sinkRecord);
+  private Map<String, Object> parseSingleValue(SinkRecord sinkRecord) {
+    return  new AvroParser().parseValue(sinkRecord).get(0);
   }
 
   private SinkRecord makeSinkRecord(
