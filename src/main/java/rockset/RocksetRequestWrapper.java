@@ -97,7 +97,8 @@ public class RocksetRequestWrapper implements RocksetWrapper {
             .document(doc)
             .key(key)
             .offset(record.kafkaOffset())
-            .partition(record.kafkaPartition());
+            .partition(record.kafkaPartition())
+            .timestamp(record.timestamp());
         messages.add(message);
       } catch (Exception e) {
         throw new ConnectException("Invalid JSON encountered in stream ", e);

@@ -15,6 +15,7 @@ public class KafkaMessage {
   @SerializedName("partition") public int partition;
   @SerializedName("offset") public long offset;
   @SerializedName("key") public Object key;
+  @SerializedName("timestamp") public long timestamp;
 
   /*
    * Getters
@@ -50,6 +51,14 @@ public class KafkaMessage {
       value = "kafka key")
   public Object getKey() {
     return this.key;
+  }
+
+  @JsonProperty("timestamp")
+  @ApiModelProperty(
+      required = true,
+      value = "kafka record timestamp")
+  public long getTimestamp() {
+    return this.timestamp;
   }
 
   /*
@@ -96,6 +105,11 @@ public class KafkaMessage {
     return this;
   }
 
+  public KafkaMessage timestamp(long timestamp) {
+    this.timestamp = timestamp;
+    return this;
+  }
+
   /*
    * Utilities
    */
@@ -116,13 +130,14 @@ public class KafkaMessage {
     sb.append("    offset: ").append(this.toIndentedString(this.offset)).append("\n");
     sb.append("    document: ").append(this.toIndentedString(this.document)).append("\n");
     sb.append("    key: ").append(this.toIndentedString(this.key)).append("\n");
+    sb.append("    timestamp: ").append(this.toIndentedString(this.timestamp)).append("\n");
     sb.append("}");
     return sb.toString();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.document, this.partition, this.offset, this.key);
+    return Objects.hash(this.document, this.partition, this.offset, this.key, this.timestamp);
   }
 
   @Override
