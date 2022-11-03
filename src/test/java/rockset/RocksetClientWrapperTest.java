@@ -2,6 +2,7 @@ package rockset;
 
 import com.rockset.client.RocksetClient;
 import com.rockset.client.api.DocumentsApi;
+import java.util.Collections;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
@@ -50,6 +51,6 @@ public class RocksetClientWrapperTest {
             Mockito.mock(RocksetClient.class),
             Mockito.mock(DocumentsApi.class));
 
-    rcw.addDoc("testPut", Arrays.asList(sr), new AvroParser(), 10);
+    rcw.addDoc("testPut", Collections.singletonList(sr), new AvroParser(), 10);
   }
 }

@@ -1,5 +1,7 @@
 package rockset;
 
+import static org.apache.kafka.common.record.TimestampType.NO_TIMESTAMP_TYPE;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
@@ -97,8 +99,12 @@ public class RocksetRequestWrapper implements RocksetWrapper {
             .document(doc)
             .key(key)
             .offset(record.kafkaOffset())
-            .partition(record.kafkaPartition())
-            .timestamp(record.timestamp());
+            .partition(record.kafkaPartition());
+
+        if (record.timestampType() != NO_TIMESTAMP_TYPE) {
+          message.setTimestamp(record.timestamp());
+        }
+
         messages.add(message);
       } catch (Exception e) {
         throw new ConnectException("Invalid JSON encountered in stream ", e);

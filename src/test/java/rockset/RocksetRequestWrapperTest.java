@@ -8,6 +8,7 @@ import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
@@ -53,7 +54,7 @@ public class RocksetRequestWrapperTest {
 
   @Test
   public void testAddDoc() throws Exception {
-    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, "{\"name\": \"johnny\"}", 0);
+    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, "{\"name\": \"johnny\"}", 0, 15L, TimestampType.CREATE_TIME);
 
     OkHttpClient client = getMockOkHttpClient();
 

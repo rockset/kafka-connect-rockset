@@ -81,6 +81,10 @@ public class KafkaMessage {
     this.key = key;
   }
 
+  public void setTimestamp(long timestamp) {
+    this.timestamp = timestamp;
+  }
+
   /*
    * Builders
    */
