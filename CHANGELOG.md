@@ -1,4 +1,10 @@
 # Rockset Kafka Connect Changelog
+## v1.4.3 2023-09-15
+- Update rockset-java client dependency
+
+## v1.4.2 2022-09-28
+- Update dependencies to latest
+
 ## v1.4.1 2022-09-21
 
 - Fix Avro parser handling nulls
