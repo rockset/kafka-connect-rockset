@@ -26,7 +26,7 @@ import rockset.utils.RetriableTask;
 
 public class RocksetSinkTask extends SinkTask {
   private static Logger log = LoggerFactory.getLogger(RocksetSinkTask.class);
-  private RocksetWrapper rw;
+  private RequestWrapper rw;
 
   // taskExecutorService is responsible to run the task of sending data
   // to Rockset. If the task fails, it submits it to retryExecutorService
@@ -58,7 +58,7 @@ public class RocksetSinkTask extends SinkTask {
   @Override
   public void start(Map<String, String> settings) {
     this.config = new RocksetConnectorConfig(settings);
-    this.rw = RocksetClientFactory.getRocksetWrapper(config);
+    this.rw = new RocksetRequestWrapper(config);
 
     int numThreads = this.config.getRocksetTaskThreads();
     this.taskExecutorService =
@@ -78,7 +78,7 @@ public class RocksetSinkTask extends SinkTask {
 
   public void start(
       Map<String, String> settings,
-      RocksetWrapper rw,
+      RequestWrapper rw,
       ExecutorService executorService,
       ExecutorService retryExecutorService) {
     this.config = new RocksetConnectorConfig(settings);
