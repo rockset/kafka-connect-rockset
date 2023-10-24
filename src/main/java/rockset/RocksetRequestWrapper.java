@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import rockset.models.KafkaDocumentsRequest;
 import rockset.models.KafkaMessage;
 
-public class RocksetRequestWrapper implements RocksetWrapper {
+public class RocksetRequestWrapper implements RequestWrapper {
   private static Logger log = LoggerFactory.getLogger(RocksetRequestWrapper.class);
 
   private static final MediaType JSON = MediaType.parse("application/json");
