@@ -4,16 +4,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.github.jcustenborder.kafka.connect.utils.config.ConfigKeyBuilder;
+import java.util.Map;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
-import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigDef.Importance;
+import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.common.config.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
-
 
 public class RocksetConnectorConfig extends AbstractConfig {
   private static Logger log = LoggerFactory.getLogger(RocksetConnectorConfig.class);
@@ -28,9 +26,11 @@ public class RocksetConnectorConfig extends AbstractConfig {
 
   private RocksetConnectorConfig(ConfigDef config, Map<String, String> originals) {
     super(config, originals, true);
-    log.info("Building Rockset connector config. Apiserver: {}" +
-        "Number of Threads: {}, Format: {}", getRocksetApiServerUrl(),
-        getRocksetTaskThreads(), getFormat());
+    log.info(
+        "Building Rockset connector config. Apiserver: {}" + "Number of Threads: {}, Format: {}",
+        getRocksetApiServerUrl(),
+        getRocksetTaskThreads(),
+        getFormat());
   }
 
   public RocksetConnectorConfig(Map<String, String> parsedConfig) {
@@ -45,66 +45,53 @@ public class RocksetConnectorConfig extends AbstractConfig {
                 .importance(Importance.HIGH)
                 .validator(RocksetConnectorConfig::validateApiServer)
                 .defaultValue("https://api.rs2.usw2.rockset.com")
-                .build()
-        )
-
+                .build())
         .define(
             ConfigKeyBuilder.of(ROCKSET_INTEGRATION_KEY, Type.STRING)
                 .documentation("Rockset Integration Key")
                 .importance(Importance.HIGH)
                 .validator(RocksetConnectorConfig::validateIntegrationKey)
                 .defaultValue(null)
-                .build()
-        )
-
+                .build())
         .define(
             ConfigKeyBuilder.of(ROCKSET_TASK_THREADS, Type.INT)
                 .documentation("Number of threads that each task will use to write to Rockset")
                 .importance(Importance.MEDIUM)
                 .defaultValue(5)
-                .build()
-        )
-
+                .build())
         .define(
-                ConfigKeyBuilder.of(ROCKSET_BATCH_SIZE, Type.INT)
-                        .documentation("Number of documents batched before a write to Rockset")
-                        .importance(Importance.MEDIUM)
-                        .defaultValue(1000)
-                        .build()
-        )
-
+            ConfigKeyBuilder.of(ROCKSET_BATCH_SIZE, Type.INT)
+                .documentation("Number of documents batched before a write to Rockset")
+                .importance(Importance.MEDIUM)
+                .defaultValue(1000)
+                .build())
         .define(
             ConfigKeyBuilder.of(FORMAT, Type.STRING)
                 .documentation("Format of the data stream.")
                 .importance(Importance.HIGH)
                 .validator(RocksetConnectorConfig::validateFormat)
                 .defaultValue("json")
-                .build()
-        )
-
+                .build())
         .define(
             ConfigKeyBuilder.of(ROCKSET_APIKEY, Type.STRING)
                 .documentation("(Deprecated) Rockset API Key")
                 .importance(Importance.HIGH)
                 .defaultValue(null)
-                .build()
-        )
-
+                .build())
         .define(
             ConfigKeyBuilder.of(ROCKSET_COLLECTION, Type.STRING)
-                .documentation("(Deprecated) Rockset collection that incoming documents will be written to.")
+                .documentation(
+                    "(Deprecated) Rockset collection that incoming documents will be written to.")
                 .importance(Importance.HIGH)
                 .defaultValue(null)
-                .build()
-        )
-
+                .build())
         .define(
             ConfigKeyBuilder.of(ROCKSET_WORKSPACE, Type.STRING)
-                .documentation("(Deprecated) Rockset workspace that incoming documents will be written to.")
+                .documentation(
+                    "(Deprecated) Rockset workspace that incoming documents will be written to.")
                 .importance(Importance.HIGH)
                 .defaultValue("commons")
-                .build()
-        );
+                .build());
   }
 
   private static void validateApiServer(String key, Object value) {
@@ -112,7 +99,8 @@ public class RocksetConnectorConfig extends AbstractConfig {
     checkArgument(key.equals(ROCKSET_APISERVER_URL));
 
     String apiserver = (String) value;
-    checkConfig(apiserver != null && apiserver.endsWith("rockset.com"),
+    checkConfig(
+        apiserver != null && apiserver.endsWith("rockset.com"),
         invalidConfigMessage(ROCKSET_APISERVER_URL, apiserver));
   }
 
@@ -121,7 +109,8 @@ public class RocksetConnectorConfig extends AbstractConfig {
     checkArgument(key.equals(ROCKSET_INTEGRATION_KEY));
 
     String integrationKey = (String) value;
-    checkConfig(integrationKey == null || integrationKey.startsWith("kafka"),
+    checkConfig(
+        integrationKey == null || integrationKey.startsWith("kafka"),
         invalidConfigMessage(ROCKSET_INTEGRATION_KEY, integrationKey));
   }
 
@@ -130,8 +119,10 @@ public class RocksetConnectorConfig extends AbstractConfig {
     checkArgument(key.equals(FORMAT));
 
     String format = (String) value;
-    checkConfig(format.equalsIgnoreCase("json") || format.equalsIgnoreCase("avro"),
-        "%s. Supported formats are: ['JSON', 'AVRO']", invalidConfigMessage(FORMAT, format));
+    checkConfig(
+        format.equalsIgnoreCase("json") || format.equalsIgnoreCase("avro"),
+        "%s. Supported formats are: ['JSON', 'AVRO']",
+        invalidConfigMessage(FORMAT, format));
   }
 
   private static void checkConfig(boolean condition, String msgFormat, Object... args) {
@@ -164,9 +155,13 @@ public class RocksetConnectorConfig extends AbstractConfig {
     return this.getString(ROCKSET_WORKSPACE);
   }
 
-  public int getRocksetTaskThreads() { return this.getInt(ROCKSET_TASK_THREADS); }
+  public int getRocksetTaskThreads() {
+    return this.getInt(ROCKSET_TASK_THREADS);
+  }
 
-  public int getRocksetBatchSize() { return this.getInt(ROCKSET_BATCH_SIZE); }
+  public int getRocksetBatchSize() {
+    return this.getInt(ROCKSET_BATCH_SIZE);
+  }
 
   public String getFormat() {
     return this.getString(FORMAT);

@@ -5,8 +5,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
 /**
- * Use BlockingExecutor to block threads submitting tasks,
- * when the executor is completely occupied.
+ * Use BlockingExecutor to block threads submitting tasks, when the executor is completely occupied.
  */
 public class BlockingExecutor {
 
@@ -22,13 +21,14 @@ public class BlockingExecutor {
   // else blocks until one of the active tasks completes
   public Future<?> submit(RetriableTask task) throws InterruptedException {
     semaphore.acquire();
-    return executorService.submit(() -> {
-      try {
-        task.run();
-      } finally {
-        semaphore.release();
-      }
-    });
+    return executorService.submit(
+        () -> {
+          try {
+            task.run();
+          } finally {
+            semaphore.release();
+          }
+        });
   }
 
   public void shutdown() {

@@ -1,6 +1,14 @@
 package rockset;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.google.common.util.concurrent.MoreExecutors;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.data.Schema;
@@ -12,15 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class RocksetSinkTaskTest {
   private static final Logger log = LoggerFactory.getLogger(RocksetSinkTaskTest.class);
@@ -78,11 +77,8 @@ public class RocksetSinkTaskTest {
 
   @Test
   public void testPutAvro() {
-    Schema schema = SchemaBuilder.struct()
-        .field("name", Schema.STRING_SCHEMA)
-        .build();
-    Struct record = new Struct(schema)
-        .put("name", "johnny");
+    Schema schema = SchemaBuilder.struct().field("name", Schema.STRING_SCHEMA).build();
+    Struct record = new Struct(schema).put("name", "johnny");
     SinkRecord sr = new SinkRecord("testPut", 1, null, "key", schema, record, 0);
     Collection records = new ArrayList();
     records.add(sr);
@@ -95,15 +91,12 @@ public class RocksetSinkTaskTest {
     addDoc("testPut", settings, records);
   }
 
-  /**
-   * Verify that puts do not throw exception, but a suceeding flush does
-   */
+  /** Verify that puts do not throw exception, but a suceeding flush does */
   @Test
   public void testRetriesPut() {
     String topic = "testRetries";
     int partition = 1;
-    SinkRecord sr = new SinkRecord(topic, partition, null, "key", null,
-                                   "{\"name\":\"johnny\"}", 0);
+    SinkRecord sr = new SinkRecord(topic, partition, null, "key", null, "{\"name\":\"johnny\"}", 0);
     Collection records = new ArrayList();
     records.add(sr);
 
@@ -121,7 +114,8 @@ public class RocksetSinkTaskTest {
     // Do a put that simulates throwing Retryable exception from apiserver
     // The put does not throw, but rather the succeeding flush throws the exception.
     Mockito.doThrow(new RetriableException("retry"))
-        .when(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
+        .when(rc)
+        .addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
     rst.put(records);
 
     Map<TopicPartition, OffsetAndMetadata> fmap = new HashMap<>();
@@ -131,7 +125,8 @@ public class RocksetSinkTaskTest {
     // The previous flush has thrown an exception and the exception is cleared.
     // New puts should be successful.
     Mockito.doNothing()
-        .when(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
+        .when(rc)
+        .addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
     rst.put(records);
     rst.flush(fmap);
   }
@@ -148,7 +143,8 @@ public class RocksetSinkTaskTest {
 
     RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
     Mockito.doThrow(new RetriableException("retry"))
-        .when(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
+        .when(rc)
+        .addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
 
     ExecutorService executorService = MoreExecutors.newDirectExecutorService();
     ExecutorService retryExecutorService = Executors.newFixedThreadPool(2);

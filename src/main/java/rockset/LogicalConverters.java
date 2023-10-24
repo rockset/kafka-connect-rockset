@@ -34,7 +34,6 @@ public class LogicalConverters {
       DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss:SSSSSS");
       return timeFormatter.format(zdt);
     }
-
   }
 
   static class DateConverter implements LogicalTypeConverter {
@@ -70,9 +69,8 @@ public class LogicalConverters {
       Map<String, Object> timestampObj = new HashMap<>();
       // rockset expects timestamps in microseconds
       timestampObj.put("__rockset_type", "timestamp");
-      timestampObj.put("value",  timestampMillis * 1000);
+      timestampObj.put("value", timestampMillis * 1000);
       return timestampObj;
     }
   }
-
 }

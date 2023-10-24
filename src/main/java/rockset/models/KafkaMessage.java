@@ -11,43 +11,42 @@ public class KafkaMessage {
    * Fields
    */
 
-  @SerializedName("document") public Object document;
-  @SerializedName("partition") public int partition;
-  @SerializedName("offset") public long offset;
-  @SerializedName("key") public Object key;
+  @SerializedName("document")
+  public Object document;
+
+  @SerializedName("partition")
+  public int partition;
+
+  @SerializedName("offset")
+  public long offset;
+
+  @SerializedName("key")
+  public Object key;
 
   /*
    * Getters
    */
 
   @JsonProperty("document")
-  @ApiModelProperty(
-      required = true,
-      value = "JSON documents")
+  @ApiModelProperty(required = true, value = "JSON documents")
   public Object getDocument() {
     return this.document;
   }
 
   @JsonProperty("partition")
-  @ApiModelProperty(
-      required = true,
-      value = "Kafka partition")
+  @ApiModelProperty(required = true, value = "Kafka partition")
   public int getPartition() {
     return this.partition;
   }
 
   @JsonProperty("offset")
-  @ApiModelProperty(
-      required = true,
-      value = "Kafka offset")
+  @ApiModelProperty(required = true, value = "Kafka offset")
   public long getOffset() {
     return this.offset;
   }
 
   @JsonProperty("key")
-  @ApiModelProperty(
-      required = true,
-      value = "kafka key")
+  @ApiModelProperty(required = true, value = "kafka key")
   public Object getKey() {
     return this.key;
   }

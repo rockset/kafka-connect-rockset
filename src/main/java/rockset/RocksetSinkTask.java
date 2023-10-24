@@ -1,15 +1,6 @@
 package rockset;
 
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.connect.errors.ConnectException;
-import org.apache.kafka.connect.errors.RetriableException;
-import org.apache.kafka.connect.sink.SinkRecord;
-import org.apache.kafka.connect.sink.SinkTask;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rockset.utils.BlockingExecutor;
-
+import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,8 +13,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import com.github.jcustenborder.kafka.connect.utils.VersionUtil;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.RetriableException;
+import org.apache.kafka.connect.sink.SinkRecord;
+import org.apache.kafka.connect.sink.SinkTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import rockset.utils.BlockingExecutor;
 import rockset.utils.RetriableTask;
 
 public class RocksetSinkTask extends SinkTask {
@@ -46,7 +44,6 @@ public class RocksetSinkTask extends SinkTask {
   private RocksetConnectorConfig config;
   private RecordParser recordParser;
 
-
   private RecordParser getRecordParser(String format) {
     switch (format.toLowerCase()) {
       case "json":
@@ -64,24 +61,30 @@ public class RocksetSinkTask extends SinkTask {
     this.rw = RocksetClientFactory.getRocksetWrapper(config);
 
     int numThreads = this.config.getRocksetTaskThreads();
-    this.taskExecutorService = new BlockingExecutor(numThreads,
-        Executors.newFixedThreadPool(numThreads));
+    this.taskExecutorService =
+        new BlockingExecutor(numThreads, Executors.newFixedThreadPool(numThreads));
 
-    this.retryExecutorService = new ThreadPoolExecutor(
-        numThreads * 2, numThreads * 2,
-        1, TimeUnit.MINUTES, new LinkedBlockingQueue<>(numThreads * 10));
+    this.retryExecutorService =
+        new ThreadPoolExecutor(
+            numThreads * 2,
+            numThreads * 2,
+            1,
+            TimeUnit.MINUTES,
+            new LinkedBlockingQueue<>(numThreads * 10));
 
     this.futureMap = new HashMap<>();
     this.recordParser = getRecordParser(config.getFormat());
   }
 
-  public void start(Map<String, String> settings, RocksetWrapper rw,
-                    ExecutorService executorService,
-                    ExecutorService retryExecutorService) {
+  public void start(
+      Map<String, String> settings,
+      RocksetWrapper rw,
+      ExecutorService executorService,
+      ExecutorService retryExecutorService) {
     this.config = new RocksetConnectorConfig(settings);
     this.rw = rw;
-    this.taskExecutorService = new BlockingExecutor(config.getRocksetTaskThreads(),
-        executorService);
+    this.taskExecutorService =
+        new BlockingExecutor(config.getRocksetTaskThreads(), executorService);
     this.retryExecutorService = retryExecutorService;
     this.futureMap = new HashMap<>();
     this.recordParser = getRecordParser(config.getFormat());
@@ -101,7 +104,7 @@ public class RocksetSinkTask extends SinkTask {
   private Map<TopicPartition, Collection<SinkRecord>> partitionRecordsByTopic(
       Collection<SinkRecord> records) {
     Map<TopicPartition, Collection<SinkRecord>> topicPartitionedRecords = new HashMap<>();
-    for (SinkRecord record: records) {
+    for (SinkRecord record : records) {
       TopicPartition key = new TopicPartition(record.topic(), record.kafkaPartition());
       topicPartitionedRecords.computeIfAbsent(key, k -> new ArrayList<>()).add(record);
     }
@@ -110,23 +113,28 @@ public class RocksetSinkTask extends SinkTask {
   }
 
   private void submitForProcessing(Collection<SinkRecord> records) {
-    partitionRecordsByTopic(records).forEach((toppar, recordBatch) -> {
-      try {
-        RetriableTask task = new RetriableTask(taskExecutorService, retryExecutorService,
-            () -> addDocs(toppar.topic(), recordBatch));
+    partitionRecordsByTopic(records)
+        .forEach(
+            (toppar, recordBatch) -> {
+              try {
+                RetriableTask task =
+                    new RetriableTask(
+                        taskExecutorService,
+                        retryExecutorService,
+                        () -> addDocs(toppar.topic(), recordBatch));
 
-        // this should only block if all the threads are busy
-        taskExecutorService.submit(task);
+                // this should only block if all the threads are busy
+                taskExecutorService.submit(task);
 
-        futureMap.computeIfAbsent(toppar, k -> new ArrayList<>()).add(task);
-      } catch (InterruptedException e) {
-        throw new ConnectException("Failed to put records", e);
-      }
-    });
+                futureMap.computeIfAbsent(toppar, k -> new ArrayList<>()).add(task);
+              } catch (InterruptedException e) {
+                throw new ConnectException("Failed to put records", e);
+              }
+            });
   }
 
   private boolean isRetriableException(Throwable e) {
-   return (e.getCause() != null && e.getCause() instanceof RetriableException);
+    return (e.getCause() != null && e.getCause() instanceof RetriableException);
   }
 
   private void checkForFailures(TopicPartition tp) {
@@ -143,13 +151,18 @@ public class RocksetSinkTask extends SinkTask {
       } catch (Exception e) {
         if (isRetriableException(e)) {
           throw new RetriableException(
-              String.format("Unable to write document for topic: %s, partition: %s, in Rockset,"
-                  + " should retry, cause: %s", tp.topic(), tp.partition(), e.getMessage()), e);
+              String.format(
+                  "Unable to write document for topic: %s, partition: %s, in Rockset,"
+                      + " should retry, cause: %s",
+                  tp.topic(), tp.partition(), e.getMessage()),
+              e);
         }
 
         throw new RuntimeException(
-            String.format("Unable to write document for topic: %s, partition: %s, in Rockset,"
-                + " cause: %s", tp.topic(), tp.partition(), e.getMessage()), e);
+            String.format(
+                "Unable to write document for topic: %s, partition: %s, in Rockset," + " cause: %s",
+                tp.topic(), tp.partition(), e.getMessage()),
+            e);
       } finally {
         futureIterator.remove();
       }
@@ -163,11 +176,16 @@ public class RocksetSinkTask extends SinkTask {
 
   @Override
   public void flush(Map<TopicPartition, OffsetAndMetadata> map) {
-    map.forEach((toppar, offsetAndMetadata) -> {
-      log.debug("Flushing for topic: {}, partition: {}, offset: {}, metadata: {}",
-          toppar.topic(), toppar.partition(), offsetAndMetadata.offset(), offsetAndMetadata.metadata());
-      checkForFailures(toppar);
-    });
+    map.forEach(
+        (toppar, offsetAndMetadata) -> {
+          log.debug(
+              "Flushing for topic: {}, partition: {}, offset: {}, metadata: {}",
+              toppar.topic(),
+              toppar.partition(),
+              offsetAndMetadata.offset(),
+              offsetAndMetadata.metadata());
+          checkForFailures(toppar);
+        });
   }
 
   @Override

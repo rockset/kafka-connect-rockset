@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.avro.generic.GenericData.Record;
 import org.apache.kafka.connect.data.Date;
 import org.apache.kafka.connect.data.Field;
@@ -31,8 +30,7 @@ class AvroParser implements RecordParser {
       ImmutableMap.of(
           Time.SCHEMA.name(), new TimeConverter(),
           Date.SCHEMA.name(), new DateConverter(),
-          Timestamp.SCHEMA.name(), new TimestampConverter()
-      );
+          Timestamp.SCHEMA.name(), new TimestampConverter());
 
   @Override
   public Map<String, Object> parseValue(SinkRecord record) {
@@ -69,10 +67,10 @@ class AvroParser implements RecordParser {
     switch (schema.type()) {
       case STRUCT:
       case MAP:
-        return convertLogicalTypesMap(schema, (Map<String, Object>)o);
+        return convertLogicalTypesMap(schema, (Map<String, Object>) o);
 
       case ARRAY:
-        return convertLogicalTypesArray(schema, (List<Object>)o);
+        return convertLogicalTypesArray(schema, (List<Object>) o);
     }
 
     // cld be a scalar type, use as-is
@@ -135,10 +133,10 @@ class AvroParser implements RecordParser {
     }
 
     try {
-      return new ObjectMapper().readValue(val.toString(), new TypeReference<Map<String, Object>>() {});
+      return new ObjectMapper()
+          .readValue(val.toString(), new TypeReference<Map<String, Object>>() {});
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
-
 }
