@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.api.Test;
+import rockset.parser.JsonParser;
 
 public class JsonParserTest {
 
