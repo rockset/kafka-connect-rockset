@@ -1,4 +1,4 @@
-package rockset;
+package rockset.parser;
 
 import java.time.Instant;
 import java.time.LocalDate;

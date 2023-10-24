@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -22,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rockset.models.KafkaDocumentsRequest;
 import rockset.models.KafkaMessage;
+import rockset.parser.RecordParser;
 
 public class RocksetRequestWrapper implements RequestWrapper {
   private static Logger log = LoggerFactory.getLogger(RocksetRequestWrapper.class);
@@ -35,25 +35,11 @@ public class RocksetRequestWrapper implements RequestWrapper {
   private String integrationKeyEncoded;
   private String apiServer;
 
-  public RocksetRequestWrapper(RocksetConnectorConfig config) {
-    if (client == null) {
-      client =
-          new OkHttpClient.Builder()
-              .connectTimeout(1, TimeUnit.MINUTES)
-              .writeTimeout(1, TimeUnit.MINUTES)
-              .readTimeout(1, TimeUnit.MINUTES)
-              .build();
-    }
-
-    parseConnectionString(config.getRocksetIntegrationKey());
-    this.apiServer = config.getRocksetApiServerUrl();
-  }
-
   // used for testing
   public RocksetRequestWrapper(RocksetConnectorConfig config, OkHttpClient client) {
     this.client = client;
 
-    parseConnectionString(config.getRocksetApiServerUrl());
+    parseConnectionString(config.getRocksetIntegrationKey());
     this.apiServer = config.getRocksetApiServerUrl();
   }
 
@@ -64,14 +50,6 @@ public class RocksetRequestWrapper implements RequestWrapper {
   private static String base64EncodeAsUserPassword(String integrationKey) {
     final String userPassword = integrationKey + ":"; // password is empty
     return Base64.getEncoder().encodeToString(userPassword.getBytes(StandardCharsets.UTF_8));
-  }
-
-  private boolean isInternalError(int code) {
-    return code == 500 // INTERNALERROR
-        || code == 502
-        || code == 503 // NOT_READY
-        || code == 504
-        || code == 429; // RESOURCEEXCEEDED
   }
 
   @Override
@@ -105,6 +83,14 @@ public class RocksetRequestWrapper implements RequestWrapper {
     sendDocs(topic, messages);
   }
 
+  private boolean isRetriableHttpCode(int code) {
+    return code == 429 || code >= 500;
+  }
+
+  private boolean isSuccessHttpCode(int code) {
+    return code == 200;
+  }
+
   private void sendDocs(String topic, List<KafkaMessage> messages) {
     Preconditions.checkArgument(!messages.isEmpty());
     log.debug("Sending batch of {} messages for topic: {} to Rockset", messages.size(), topic);
@@ -123,22 +109,24 @@ public class RocksetRequestWrapper implements RequestWrapper {
               .build();
 
       try (Response response = client.newCall(request).execute()) {
-        if (isInternalError(response.code())) {
-          // internal errors are retriable
+        if (isSuccessHttpCode(response.code())) {
+          // Nothing to do, write succeeded
+          return;
+        }
+        if (isRetriableHttpCode(response.code())) {
           throw new RetriableException(
               String.format(
-                  "Received internal error code: %s, message: %s. Can Retry.",
+                  "Received retriable http status code  %d, message: %s. Can Retry.",
                   response.code(), response.message()));
         }
 
-        if (response.code() != 200) {
-          throw new ConnectException(
-              String.format(
-                  "Unable to write document" + " in Rockset, cause: %s", response.message()));
-        }
+        // Anything that is not retriable and is not a success is a permanent error
+        throw new ConnectException(
+            String.format(
+                "Unable to write document" + " in Rockset, cause: %s", response.message()));
       }
     } catch (SocketTimeoutException ste) {
-      throw new RetriableException("Encountered socket timeout exception. Can Retry", ste);
+      throw new RetriableException("Encountered socket timeout exception. Can Retry.", ste);
     } catch (RetriableException e) {
       throw e;
     } catch (Exception e) {

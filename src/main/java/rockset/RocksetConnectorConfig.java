@@ -139,20 +139,8 @@ public class RocksetConnectorConfig extends AbstractConfig {
     return this.getString(ROCKSET_APISERVER_URL);
   }
 
-  public String getRocksetApikey() {
-    return this.getString(ROCKSET_APIKEY);
-  }
-
   public String getRocksetIntegrationKey() {
     return this.getString(ROCKSET_INTEGRATION_KEY);
-  }
-
-  public String getRocksetCollection() {
-    return this.getString(ROCKSET_COLLECTION);
-  }
-
-  public String getRocksetWorkspace() {
-    return this.getString(ROCKSET_WORKSPACE);
   }
 
   public int getRocksetTaskThreads() {

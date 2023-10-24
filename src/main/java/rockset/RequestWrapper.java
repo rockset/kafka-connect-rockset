@@ -2,6 +2,7 @@ package rockset;
 
 import java.util.Collection;
 import org.apache.kafka.connect.sink.SinkRecord;
+import rockset.parser.RecordParser;
 
 public interface RequestWrapper {
 
