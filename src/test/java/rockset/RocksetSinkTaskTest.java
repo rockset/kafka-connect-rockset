@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -31,12 +32,14 @@ public class RocksetSinkTaskTest {
 
     RocksetSinkTask rst = new RocksetSinkTask();
     rst.start(settings, rr, executorService, retryExecutorService);
+    rst.open(Collections.singleton(new TopicPartition(topic, 1)));
 
     rst.put(records);
 
     Map<TopicPartition, OffsetAndMetadata> map = new HashMap();
     map.put(new TopicPartition(topic, 1), new OffsetAndMetadata(1L));
     rst.flush(map);
+    rst.close(Collections.singleton(new TopicPartition(topic, 1)));
 
     Mockito.verify(rr).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
   }
