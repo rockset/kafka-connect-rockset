@@ -5,7 +5,6 @@ import com.rockset.client.ApiException;
 import com.rockset.client.RocksetClient;
 import com.rockset.client.api.DocumentsApi;
 import com.rockset.client.model.AddDocumentsRequest;
-
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,8 +36,8 @@ public class RocksetClientWrapper implements RocksetWrapper {
   }
 
   // used for testing
-  public RocksetClientWrapper(RocksetConnectorConfig config, RocksetClient client,
-                              DocumentsApi documentsClient) {
+  public RocksetClientWrapper(
+      RocksetConnectorConfig config, RocksetClient client, DocumentsApi documentsClient) {
     this.client = client;
     this.documentsClient = documentsClient;
     this.mapper = new ObjectMapper();
@@ -51,8 +50,8 @@ public class RocksetClientWrapper implements RocksetWrapper {
   }
 
   @Override
-  public void addDoc(String topic, Collection<SinkRecord> records,
-                     RecordParser recordParser, int batchSize) {
+  public void addDoc(
+      String topic, Collection<SinkRecord> records, RecordParser recordParser, int batchSize) {
     List<Object> messages = new LinkedList<>();
 
     for (SinkRecord record : records) {
@@ -65,8 +64,7 @@ public class RocksetClientWrapper implements RocksetWrapper {
       try {
         Map<String, Object> doc = recordParser.parseValue(record);
         messages.add(doc);
-      }
-      catch (Exception e) {
+      } catch (Exception e) {
         throw new ConnectException("Invalid JSON encountered in stream", e);
       }
     }
@@ -84,9 +82,12 @@ public class RocksetClientWrapper implements RocksetWrapper {
         throw new RetriableException("Internal error when writing documents to Rockset", e);
       }
 
-      throw new ConnectException(String.format("Unable to write document for topic %s"
-              + "to collection %s, workspace %s in Rockset, cause: %s",
-          topic, collection, workspace, e.getMessage()), e);
+      throw new ConnectException(
+          String.format(
+              "Unable to write document for topic %s"
+                  + "to collection %s, workspace %s in Rockset, cause: %s",
+              topic, collection, workspace, e.getMessage()),
+          e);
     }
   }
 }

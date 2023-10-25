@@ -3,7 +3,6 @@ package rockset.models;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 import io.swagger.annotations.ApiModelProperty;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -14,25 +13,24 @@ public class KafkaDocumentsRequest {
    * Fields
    */
 
-  @SerializedName("kafka_messages") public List<KafkaMessage> kafkaMessages = new ArrayList<>();
-  @SerializedName("topic") public String topic;
+  @SerializedName("kafka_messages")
+  public List<KafkaMessage> kafkaMessages = new ArrayList<>();
+
+  @SerializedName("topic")
+  public String topic;
 
   /*
    * Getters
    */
 
   @JsonProperty("kafka_messages")
-  @ApiModelProperty(
-      required = true,
-      value = "Array of JSON documents")
+  @ApiModelProperty(required = true, value = "Array of JSON documents")
   public List<KafkaMessage> getKafkaMessages() {
     return this.kafkaMessages;
   }
 
   @JsonProperty("topic")
-  @ApiModelProperty(
-      required = true,
-      value = "Kafka topic")
+  @ApiModelProperty(required = true, value = "Kafka topic")
   public String getTopic() {
     return this.topic;
   }

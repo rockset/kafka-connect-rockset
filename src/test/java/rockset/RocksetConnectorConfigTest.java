@@ -1,14 +1,14 @@
 package rockset;
 
-import org.apache.kafka.common.config.ConfigException;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.kafka.common.config.ConfigException;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RocksetConnectorConfigTest {
   private static final Logger log = LoggerFactory.getLogger(RocksetConnectorConfigTest.class);
@@ -19,7 +19,7 @@ public class RocksetConnectorConfigTest {
     badFormatSettings.put("rockset.integration.key", "kafka://5");
     badFormatSettings.put("format", "abc");
 
-    assertThrows(ConfigException.class, () ->  new RocksetConnectorConfig(badFormatSettings));
+    assertThrows(ConfigException.class, () -> new RocksetConnectorConfig(badFormatSettings));
   }
 
   @Test

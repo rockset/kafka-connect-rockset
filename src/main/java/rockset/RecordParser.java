@@ -5,26 +5,22 @@ import static com.google.common.base.Preconditions.checkArgument;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.confluent.connect.avro.AvroData;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public interface RecordParser {
 
   Map<String, Object> parseValue(SinkRecord record);
 
   /**
-   * Parse key from a sink record.
-   * If key is struct type convert to Java Map type
-   * else return what is in the key
+   * Parse key from a sink record. If key is struct type convert to Java Map type else return what
+   * is in the key
    */
   default Object parseKey(SinkRecord record) throws IOException {
     if (record.key() instanceof Struct) {
@@ -37,7 +33,8 @@ public interface RecordParser {
   }
 
   static Object toMap(Object key) throws IOException {
-    return new ObjectMapper().readValue(key.toString(), new TypeReference<Map<String, Object>>() {});
+    return new ObjectMapper()
+        .readValue(key.toString(), new TypeReference<Map<String, Object>>() {});
   }
 }
 
@@ -66,7 +63,8 @@ class JsonParser implements RecordParser {
 
       // Could not deserialize to as map and list. Throw
       String name = record.value() == null ? "null" : record.value().getClass().getName();
-      String message = String.format("Cannot deserialize the record of type %s as Map or List", name);
+      String message =
+          String.format("Cannot deserialize the record of type %s as Map or List", name);
       log.warn(message, cause);
       throw new RuntimeException(message, e);
     }

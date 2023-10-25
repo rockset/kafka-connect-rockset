@@ -6,7 +6,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -28,9 +27,10 @@ public class BlockingExecutorTest {
     CountDownLatch start2 = new CountDownLatch(1);
 
     // Both should go through
-    Future f1 = executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(start1)));
-    Future f2 = executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(start2)));
-
+    Future f1 =
+        executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(start1)));
+    Future f2 =
+        executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(start2)));
 
     // finish and wait for second task
     start2.countDown();
@@ -38,7 +38,8 @@ public class BlockingExecutorTest {
 
     // add another task
     CountDownLatch start3 = new CountDownLatch(1);
-    Future f3 = executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(start3)));
+    Future f3 =
+        executor.submit(new RetriableTask(executor, retryExecutorService, () -> wait(start3)));
 
     // finish and wait for third task
     start3.countDown();
@@ -62,13 +63,17 @@ public class BlockingExecutorTest {
 
     // submitting a new job from a different thread should block the new thread
     CountDownLatch doneLatch = new CountDownLatch(1);
-    Future secondTaskSubmission = Executors.newFixedThreadPool(1).submit(() -> {
-      try {
-        executor.submit(new RetriableTask(executor, retryExecutorService, doneLatch::countDown));
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    });
+    Future secondTaskSubmission =
+        Executors.newFixedThreadPool(1)
+            .submit(
+                () -> {
+                  try {
+                    executor.submit(
+                        new RetriableTask(executor, retryExecutorService, doneLatch::countDown));
+                  } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                  }
+                });
 
     try {
       secondTaskSubmission.get(1, TimeUnit.SECONDS);

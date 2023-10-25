@@ -1,8 +1,7 @@
 package rockset;
 
-import org.apache.kafka.connect.sink.SinkRecord;
-
 import java.util.Collection;
+import org.apache.kafka.connect.sink.SinkRecord;
 
 public interface RocksetWrapper {
 
