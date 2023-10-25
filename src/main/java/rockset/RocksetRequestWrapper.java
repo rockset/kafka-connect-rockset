@@ -31,20 +31,14 @@ public class RocksetRequestWrapper implements RequestWrapper {
   private static final String KAFKA_ENDPOINT = "/v1/receivers/kafka";
   private static final ObjectMapper mapper = new ObjectMapper();
 
-  private OkHttpClient client;
-  private String integrationKeyEncoded;
-  private String apiServer;
+  private final OkHttpClient client;
+  private final String integrationKeyEncoded;
+  private final String apiServer;
 
-  // used for testing
   public RocksetRequestWrapper(RocksetConnectorConfig config, OkHttpClient client) {
     this.client = client;
-
-    parseConnectionString(config.getRocksetIntegrationKey());
+    this.integrationKeyEncoded = base64EncodeAsUserPassword(config.getRocksetIntegrationKey());
     this.apiServer = config.getRocksetApiServerUrl();
-  }
-
-  private void parseConnectionString(String integrationKey) {
-    this.integrationKeyEncoded = base64EncodeAsUserPassword(integrationKey);
   }
 
   private static String base64EncodeAsUserPassword(String integrationKey) {
@@ -93,6 +87,11 @@ public class RocksetRequestWrapper implements RequestWrapper {
 
   private void sendDocs(String topic, List<KafkaMessage> messages) {
     Preconditions.checkArgument(!messages.isEmpty());
+    if (Thread.interrupted()) {
+      // Exit early in case another thread failed and the whole batch of requests from
+      // RocksetSinkTask::put() are going to be cancelled
+      throw new ConnectException("Interrupted during call to RocksetRequestWrapper::addDocs");
+    }
     log.debug("Sending batch of {} messages for topic: {} to Rockset", messages.size(), topic);
 
     KafkaDocumentsRequest documentsRequest =

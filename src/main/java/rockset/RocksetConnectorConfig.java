@@ -14,15 +14,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RocksetConnectorConfig extends AbstractConfig {
-  private static Logger log = LoggerFactory.getLogger(RocksetConnectorConfig.class);
+  private static final Logger log = LoggerFactory.getLogger(RocksetConnectorConfig.class);
   public static final String FORMAT = "format";
   public static final String ROCKSET_APISERVER_URL = "rockset.apiserver.url";
-  public static final String ROCKSET_APIKEY = "rockset.apikey";
   public static final String ROCKSET_INTEGRATION_KEY = "rockset.integration.key";
-  public static final String ROCKSET_COLLECTION = "rockset.collection";
-  public static final String ROCKSET_WORKSPACE = "rockset.workspace";
   public static final String ROCKSET_TASK_THREADS = "rockset.task.threads";
   public static final String ROCKSET_BATCH_SIZE = "rockset.batch.size";
+  public static final String ROCKSET_RETRY_BACKOFF_MS = "rockset.retry.backoff.ms";
 
   private RocksetConnectorConfig(ConfigDef config, Map<String, String> originals) {
     super(config, originals, true);
@@ -44,7 +42,7 @@ public class RocksetConnectorConfig extends AbstractConfig {
                 .documentation("Rockset API Server URL")
                 .importance(Importance.HIGH)
                 .validator(RocksetConnectorConfig::validateApiServer)
-                .defaultValue("https://api.rs2.usw2.rockset.com")
+                .defaultValue("https://api.usw2a1.rockset.com")
                 .build())
         .define(
             ConfigKeyBuilder.of(ROCKSET_INTEGRATION_KEY, Type.STRING)
@@ -73,24 +71,10 @@ public class RocksetConnectorConfig extends AbstractConfig {
                 .defaultValue("json")
                 .build())
         .define(
-            ConfigKeyBuilder.of(ROCKSET_APIKEY, Type.STRING)
-                .documentation("(Deprecated) Rockset API Key")
-                .importance(Importance.HIGH)
-                .defaultValue(null)
-                .build())
-        .define(
-            ConfigKeyBuilder.of(ROCKSET_COLLECTION, Type.STRING)
-                .documentation(
-                    "(Deprecated) Rockset collection that incoming documents will be written to.")
-                .importance(Importance.HIGH)
-                .defaultValue(null)
-                .build())
-        .define(
-            ConfigKeyBuilder.of(ROCKSET_WORKSPACE, Type.STRING)
-                .documentation(
-                    "(Deprecated) Rockset workspace that incoming documents will be written to.")
-                .importance(Importance.HIGH)
-                .defaultValue("commons")
+            ConfigKeyBuilder.of(ROCKSET_RETRY_BACKOFF_MS, Type.INT)
+                .documentation("How long to backoff in milliseconds between retriable errors")
+                .importance(Importance.MEDIUM)
+                .defaultValue(5000)
                 .build());
   }
 
@@ -153,5 +137,9 @@ public class RocksetConnectorConfig extends AbstractConfig {
 
   public String getFormat() {
     return this.getString(FORMAT);
+  }
+
+  public int getRetryBackoffMs() {
+    return this.getInt(ROCKSET_RETRY_BACKOFF_MS);
   }
 }

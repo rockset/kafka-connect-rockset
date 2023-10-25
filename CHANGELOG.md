@@ -1,4 +1,9 @@
 # Rockset Kafka Connect Changelog
+## v2.0.0 2023-10-30
+- New configuration option `rockset.retry.backoff.ms`
+- Removed deprecated configurations `rockset.apikey`, `rockset.collection`, and `rockset.workspace`
+- Bug fix for potential out-of-order message delivery
+
 ## v1.4.3 2023-09-15
 - Update rockset-java client dependency
 
