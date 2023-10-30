@@ -20,6 +20,8 @@ import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import rockset.parser.AvroParser;
+import rockset.parser.JsonParser;
 
 public class RocksetRequestWrapperTest {
   private static RocksetConnectorConfig rcc;

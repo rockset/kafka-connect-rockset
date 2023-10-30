@@ -1,4 +1,4 @@
-package rockset;
+package rockset.parser;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,12 +20,12 @@ import org.apache.kafka.connect.data.Time;
 import org.apache.kafka.connect.data.Timestamp;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.sink.SinkRecord;
-import rockset.LogicalConverters.DateConverter;
-import rockset.LogicalConverters.LogicalTypeConverter;
-import rockset.LogicalConverters.TimeConverter;
-import rockset.LogicalConverters.TimestampConverter;
+import rockset.parser.LogicalConverters.DateConverter;
+import rockset.parser.LogicalConverters.LogicalTypeConverter;
+import rockset.parser.LogicalConverters.TimeConverter;
+import rockset.parser.LogicalConverters.TimestampConverter;
 
-class AvroParser implements RecordParser {
+public class AvroParser implements RecordParser {
   private static final Map<String, LogicalTypeConverter> LOGICAL_TYPE_CONVERTERS =
       ImmutableMap.of(
           Time.SCHEMA.name(), new TimeConverter(),

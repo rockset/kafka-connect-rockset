@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -24,71 +25,53 @@ import org.slf4j.LoggerFactory;
 public class RocksetSinkTaskTest {
   private static final Logger log = LoggerFactory.getLogger(RocksetSinkTaskTest.class);
 
-  private void addDoc(String topic, Map settings, Collection records) {
-    {
-      RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
+  private void addDoc(String topic, Map<String, String> settings, Collection<SinkRecord> records) {
+    RocksetRequestWrapper rr = Mockito.mock(RocksetRequestWrapper.class);
+    ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+    ExecutorService retryExecutorService = MoreExecutors.newDirectExecutorService();
 
-      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
+    TopicPartition tp = new TopicPartition(topic, 1);
+    Collection<TopicPartition> assignedPartitions = Collections.singleton(tp);
+    Map<TopicPartition, OffsetAndMetadata> flushPartitions =
+        Collections.singletonMap(tp, new OffsetAndMetadata(1L));
 
-      RocksetSinkTask rst = new RocksetSinkTask();
-      ExecutorService retryExecutorService = MoreExecutors.newDirectExecutorService();
-      rst.start(settings, rc, executorService, retryExecutorService);
+    RocksetSinkTask rst = new RocksetSinkTask();
+    rst.start(settings, rr, executorService, retryExecutorService);
+    rst.open(assignedPartitions);
+    rst.put(records);
+    rst.flush(flushPartitions);
+    rst.close(assignedPartitions);
+    rst.stop();
 
-      rst.put(records);
-
-      Map<TopicPartition, OffsetAndMetadata> map = new HashMap();
-      map.put(new TopicPartition(topic, 1), new OffsetAndMetadata(1L));
-      rst.flush(map);
-
-      Mockito.verify(rc).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
-    }
-
-    {
-      RocksetRequestWrapper rr = Mockito.mock(RocksetRequestWrapper.class);
-      ExecutorService executorService = MoreExecutors.newDirectExecutorService();
-      ExecutorService retryExecutorService = MoreExecutors.newDirectExecutorService();
-
-      RocksetSinkTask rst = new RocksetSinkTask();
-      rst.start(settings, rr, executorService, retryExecutorService);
-
-      rst.put(records);
-
-      Map<TopicPartition, OffsetAndMetadata> map = new HashMap();
-      map.put(new TopicPartition(topic, 1), new OffsetAndMetadata(1L));
-      rst.flush(map);
-
-      Mockito.verify(rr).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
-    }
+    Mockito.verify(rr).addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
   }
 
   @Test
   public void testPutJson() {
-    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", null, "{\"name\":\"johnny\"}", 0);
-    Collection records = new ArrayList();
+    String topic = "testPutJson";
+    SinkRecord sr = new SinkRecord(topic, 1, null, "key", null, "{\"name\":\"johnny\"}", 0);
+    Collection<SinkRecord> records = new ArrayList<>();
     records.add(sr);
 
-    Map settings = new HashMap();
-    settings.put("rockset.apikey", "5");
-    settings.put("rockset.collection", "j");
+    Map<String, String> settings = new HashMap<>();
     settings.put("format", "JSON");
 
-    addDoc("testPut", settings, records);
+    addDoc(topic, settings, records);
   }
 
   @Test
   public void testPutAvro() {
+    String topic = "testPutAvro";
     Schema schema = SchemaBuilder.struct().field("name", Schema.STRING_SCHEMA).build();
     Struct record = new Struct(schema).put("name", "johnny");
-    SinkRecord sr = new SinkRecord("testPut", 1, null, "key", schema, record, 0);
-    Collection records = new ArrayList();
+    SinkRecord sr = new SinkRecord(topic, 1, null, "key", schema, record, 0);
+    Collection<SinkRecord> records = new ArrayList<>();
     records.add(sr);
 
-    Map settings = new HashMap();
-    settings.put("rockset.apikey", "5");
-    settings.put("rockset.collection", "j");
+    Map<String, String> settings = new HashMap<>();
     settings.put("format", "avro");
 
-    addDoc("testPut", settings, records);
+    addDoc(topic, settings, records);
   }
 
   /** Verify that puts do not throw exception, but a suceeding flush does */
@@ -97,12 +80,10 @@ public class RocksetSinkTaskTest {
     String topic = "testRetries";
     int partition = 1;
     SinkRecord sr = new SinkRecord(topic, partition, null, "key", null, "{\"name\":\"johnny\"}", 0);
-    Collection records = new ArrayList();
+    Collection<SinkRecord> records = new ArrayList<>();
     records.add(sr);
 
-    Map settings = new HashMap();
-    settings.put("rockset.apikey", "5");
-    settings.put("rockset.collection", "j");
+    Map<String, String> settings = new HashMap<>();
 
     RocksetRequestWrapper rc = Mockito.mock(RocksetRequestWrapper.class);
     ExecutorService executorService = MoreExecutors.newDirectExecutorService();
@@ -110,6 +91,7 @@ public class RocksetSinkTaskTest {
 
     RocksetSinkTask rst = new RocksetSinkTask();
     rst.start(settings, rc, executorService, retryExecutorService);
+    rst.open(Collections.singleton(new TopicPartition(topic, partition)));
 
     // Do a put that simulates throwing Retryable exception from apiserver
     // The put does not throw, but rather the succeeding flush throws the exception.
@@ -129,19 +111,21 @@ public class RocksetSinkTaskTest {
         .addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
     rst.put(records);
     rst.flush(fmap);
+    rst.close(Collections.singleton(new TopicPartition(topic, partition)));
+    rst.stop();
   }
 
   @Test
   public void testRetriesFlush() {
-    SinkRecord sr = new SinkRecord("testRetries", 1, null, "key", null, "{\"name\":\"johnny\"}", 0);
-    Collection records = new ArrayList();
+    String topic = "testRetries";
+    int partition = 1;
+    SinkRecord sr = new SinkRecord(topic, partition, null, "key", null, "{\"name\":\"johnny\"}", 0);
+    Collection<SinkRecord> records = new ArrayList<>();
     records.add(sr);
 
-    Map settings = new HashMap();
-    settings.put("rockset.apikey", "5");
-    settings.put("rockset.collection", "j");
+    Map<String, String> settings = new HashMap<>();
 
-    RocksetClientWrapper rc = Mockito.mock(RocksetClientWrapper.class);
+    RocksetRequestWrapper rc = Mockito.mock(RocksetRequestWrapper.class);
     Mockito.doThrow(new RetriableException("retry"))
         .when(rc)
         .addDoc(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyInt());
@@ -151,10 +135,13 @@ public class RocksetSinkTaskTest {
 
     RocksetSinkTask rst = new RocksetSinkTask();
     rst.start(settings, rc, executorService, retryExecutorService);
+    rst.open(Collections.singleton(new TopicPartition(topic, partition)));
     rst.put(records);
 
-    Map<TopicPartition, OffsetAndMetadata> map = new HashMap();
+    Map<TopicPartition, OffsetAndMetadata> map = new HashMap<>();
     map.put(new TopicPartition("testRetries", 1), new OffsetAndMetadata(1L));
     assertThrows(RetriableException.class, () -> rst.flush(map));
+    rst.close(Collections.singleton(new TopicPartition(topic, partition)));
+    rst.stop();
   }
 }
