@@ -70,9 +70,10 @@ curl -i http://localhost:8083/connectors -H "Content-Type: application/json" -X 
       "tasks.max": "20",
       "rockset.task.threads": "5",
       "rockset.batch.size": "1000",
+      "rockset.retry.backoff.ms": "5000",
       "topics": "<your-kafka-topics separated by commas>",
       "rockset.integration.key": "<rockset-kafka-integration-key>",
-      "rockset.apiserver.url": "https://api.rs2.usw2.rockset.com",
+      "rockset.apiserver.url": "https://api.usw2a1.rockset.com",
       "format": "json"
     }
 }'
@@ -122,7 +123,7 @@ See the [the Confluent documentation](https://docs.confluent.io/current/connect/
 |-------- |----------------------------|-----------------------|
 | `rockset.task.threads` | Number of threads that each task should spawn when writing to Rockset. | 5 |
 | `rockset.batch.size` | Max number of documents to be written within a single network request | 1000 |
-
+| `rockset.retry.backoff.ms` | Delay in ms between retries to Rockset | 5000 |
 ## License
 
 Rockset Connect for Kafka is licensed under the Apache License 2.0.

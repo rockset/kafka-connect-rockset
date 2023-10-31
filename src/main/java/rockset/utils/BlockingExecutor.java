@@ -1,8 +1,10 @@
 package rockset.utils;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
+import org.apache.kafka.connect.errors.RetriableException;
 
 /**
  * Use BlockingExecutor to block threads submitting tasks, when the executor is completely occupied.
@@ -19,8 +21,14 @@ public class BlockingExecutor {
 
   // returns immediately if a thread is available to run the task,
   // else blocks until one of the active tasks completes
-  public Future<?> submit(RetriableTask task) throws InterruptedException {
-    semaphore.acquire();
+  public Future<?> submit(Runnable task) {
+    try {
+      semaphore.acquire();
+    } catch (InterruptedException unused) {
+      CompletableFuture<Void> a = new CompletableFuture<>();
+      a.completeExceptionally(new RetriableException("Thread interrupted"));
+      return a;
+    }
     return executorService.submit(
         () -> {
           try {
