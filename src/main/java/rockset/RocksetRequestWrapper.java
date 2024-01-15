@@ -14,6 +14,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.apache.kafka.common.record.TimestampType;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -68,6 +69,15 @@ public class RocksetRequestWrapper implements RequestWrapper {
                 .key(key)
                 .offset(record.kafkaOffset())
                 .partition(record.kafkaPartition());
+
+        if(record.timestamp() != null){
+          if (record.timestampType() == TimestampType.CREATE_TIME){
+            message.createTime(record.timestamp());
+          } else if (record.timestampType() == TimestampType.LOG_APPEND_TIME){
+            message.logAppendTime(record.timestamp());
+          }
+        }
+
         messages.add(message);
       } catch (Exception e) {
         throw new ConnectException("Invalid JSON encountered in stream ", e);
