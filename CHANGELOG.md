@@ -1,4 +1,8 @@
 # Rockset Kafka Connect Changelog
+
+## v2.1.0 2024-01-24
+- Propagate kafka record timestamps for source detection latency
+
 ## v2.0.0 2023-10-30
 - New configuration option `rockset.retry.backoff.ms`
 - Removed deprecated configurations `rockset.apikey`, `rockset.collection`, and `rockset.workspace`

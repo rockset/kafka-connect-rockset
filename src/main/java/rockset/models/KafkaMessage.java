@@ -1,9 +1,9 @@
 package rockset.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 import com.google.gson.annotations.SerializedName;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.Objects;
 
 public class KafkaMessage {
 
@@ -22,6 +22,12 @@ public class KafkaMessage {
 
   @SerializedName("key")
   public Object key;
+
+  @SerializedName("create_time")
+  public Long createTime;
+
+  @SerializedName("log_append_time")
+  public Long logAppendTime;
 
   /*
    * Getters
@@ -51,6 +57,19 @@ public class KafkaMessage {
     return this.key;
   }
 
+  @JsonProperty("create_time")
+  @ApiModelProperty(required = false, value = "Create time of the message")
+  public Long getCreateTime() {
+    return this.createTime;
+  }
+
+  @JsonProperty("log_append_time")
+  @ApiModelProperty(required = false, value = "Log append time of the message")
+  public Long getLogAppendTime() {
+    return this.logAppendTime;
+  }
+
+
   /*
    * Setters
    */
@@ -70,6 +89,16 @@ public class KafkaMessage {
   public void setKey(Object key) {
     this.key = key;
   }
+
+
+  public void setLogAppendTime(Long timestamp) {
+    this.logAppendTime = timestamp;
+  }
+
+  public void setCreateTime(Long timestamp) {
+    this.createTime = timestamp;
+  }
+
 
   /*
    * Builders
@@ -95,6 +124,16 @@ public class KafkaMessage {
     return this;
   }
 
+  public KafkaMessage logAppendTime(Long timestamp) {
+    this.logAppendTime = timestamp;
+    return this;
+  }
+
+  public KafkaMessage createTime(Long timestamp) {
+    this.createTime = timestamp;
+    return this;
+  }
+
   /*
    * Utilities
    */
@@ -107,35 +146,27 @@ public class KafkaMessage {
   }
 
   @Override
-  public String toString() {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("class KafkaMessage {\n");
-
-    sb.append("    partition: ").append(this.toIndentedString(this.partition)).append("\n");
-    sb.append("    offset: ").append(this.toIndentedString(this.offset)).append("\n");
-    sb.append("    document: ").append(this.toIndentedString(this.document)).append("\n");
-    sb.append("    key: ").append(this.toIndentedString(this.key)).append("\n");
-    sb.append("}");
-    return sb.toString();
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    KafkaMessage that = (KafkaMessage) o;
+    return partition == that.partition && offset == that.offset && Objects.equal(document, that.document) && Objects.equal(key, that.key) && Objects.equal(createTime, that.createTime) && Objects.equal(logAppendTime, that.logAppendTime);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.document, this.partition, this.offset, this.key);
+    return Objects.hashCode(document, partition, offset, key, createTime, logAppendTime);
   }
 
   @Override
-  public boolean equals(java.lang.Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || this.getClass() != o.getClass()) {
-      return false;
-    }
-    final KafkaMessage kafkaMessage = (KafkaMessage) o;
-    return this.getPartition() == kafkaMessage.getPartition()
-        && this.getOffset() == kafkaMessage.getOffset()
-        && Objects.equals(this.document, kafkaMessage.document)
-        && Objects.equals(this.key, kafkaMessage.key);
+  public String toString() {
+    return "KafkaMessage{" +
+            "document=" + document +
+            ", partition=" + partition +
+            ", offset=" + offset +
+            ", key=" + key +
+            ", createTime=" + createTime +
+            ", logAppendTime=" + logAppendTime +
+            '}';
   }
 }

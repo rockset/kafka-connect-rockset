@@ -106,7 +106,7 @@ public class RocksetSinkTask extends SinkTask {
                     e ->
                         executorService.submit(
                             () ->
-                                requestWrapper.addDoc(
+                                  requestWrapper.addDoc(
                                     e.getKey().topic(),
                                     e.getValue(),
                                     recordParser,
